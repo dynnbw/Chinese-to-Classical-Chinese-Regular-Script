@@ -872,7 +872,7 @@
             
             // 数据管理按钮
             document.getElementById('importBtn').addEventListener('click', () => {
-                const url = prompt('請輸入映射數據的URL（JSON格式）:', 'https://example.com/mapping.json');
+                const url = prompt('請輸入映射數據的URL（JSON格式）:', 'https://raw.githubusercontent.com/dynnbw/Chinese-to-Classical-Chinese-Regular-Script/refs/heads/main/%E8%BD%AC%E6%8D%A2.json');
                 if (url) importMappingData(url);
             });
             document.getElementById('exportBtn').addEventListener('click', () => {
