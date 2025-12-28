@@ -157,7 +157,7 @@
 ## 字体版权声明
 本工具中使用的字體資源分別屬於其版權所有者：
 
-- 思源宋体：[Copyright 2014-2020 Adobe](http://www.adobe.com/), with Reserved Font Name 'Source'. [Copyright 2014-2020 Google](http://www.google.com/), with Reserved Font Name 'Noto'.
+- 思源宋体：[Copyright Adobe](https://adobe.ly/SourceHanSerif)
 
 - MiSans_L3：[版權歸小米科技有限責任公司所有](https://hyperos.mi.com/font/about)
 
