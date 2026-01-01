@@ -18,9 +18,52 @@
             height: 100vh;
             overflow-x: auto;
             overflow-y: hidden;
+            /* 非均匀渐变纹理 */
+            background-image: 
+                linear-gradient(120deg, rgba(0,0,0,0.01) 0%, transparent 60%),
+                linear-gradient(240deg, rgba(0,0,0,0.012) 0%, transparent 70%),
+                linear-gradient(45deg, rgba(0,0,0,0.006) 0%, transparent 50%);
+            /* 纸张轻微厚度感阴影 */
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.02);
+            position: relative;
+            overflow: hidden;
         }
         
-        /* ========== 布局容器 ========== */
+        /* 第一层大颗粒噪声 */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.02);
+            filter: url(#noise-filter-1);
+            pointer-events: none;
+        }
+
+        /* 第二层小颗粒噪声 */
+        body::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.015);
+            filter: url(#noise-filter-2);
+            pointer-events: none;
+        }
+
+       /* 噪声滤镜 */
+        svg {
+            position: absolute;
+            width: 0;
+            height: 0;
+            visibility: hidden;
+        }
+
+        /* 布局容器 */
         .app-container {
             display: flex;
             flex-direction: row;
