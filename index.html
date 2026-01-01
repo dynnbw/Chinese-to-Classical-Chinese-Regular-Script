@@ -1,5 +1,6 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hans">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -7,52 +8,57 @@
     <title>古籍篆楷轉換臺</title>
     <link rel="stylesheet" href="src/css/styles.css"> <!-- 引入 CSS 文件 -->
 </head>
+
 <body>
     <!-- iframe遮罩层 -->
     <div class="iframe-overlay" id="iframeOverlay"></div>
-    
+
     <!-- 字体设置遮罩层 -->
     <div class="font-overlay" id="fontOverlay"></div>
-    
+
     <!-- 关闭iframe的按钮 -->
     <button class="close-panel-btn" id="closePanelBtn">×</button>
-    
+
     <div class="app-container">
-    
-            <!-- 控制面板 -->
+
+        <!-- 控制面板 -->
         <aside class="control-panel">
             <h3>控制面板</h3>
-            
+
             <div class="tooltip">
                 <button id="togglePanelBtn" class="vertical-button">簡繁轉換</button>
                 <span class="tooltiptext">打開/關閉簡體轉繁體工具</span>
             </div>
-            
+
             <div class="tooltip">
                 <button id="fontSettingsBtn" class="vertical-button">字體設置</button>
                 <span class="tooltiptext">設置自定義字體</span>
             </div>
-            
+
             <div class="tooltip">
                 <button id="importBtn" class="vertical-button">導入數據</button>
                 <span class="tooltiptext">從URL導入映射數據</span>
             </div>
-            
+
             <div class="tooltip">
                 <button id="exportBtn" class="vertical-button">導出文字</button>
                 <span class="tooltiptext">導出當前轉換結果</span>
             </div>
-            
+
             <div class="tooltip">
                 <button id="viewMappingBtn" class="vertical-button">查看映射</button>
                 <span class="tooltiptext">查看當前映射表</span>
             </div>
-            
+
             <div class="tooltip">
                 <button id="debugBtn" class="vertical-button">調試信息</button>
                 <span class="tooltiptext">顯示系統調試信息</span>
             </div>
-            
+            <div class="tooltip">
+                <button id="toggleDirectionBtn" class="vertical-button">繁→篆</button>
+                <span class="tooltiptext">切換轉換方向 (繁體↔篆書)</span>
+            </div>
+
             <!-- 统计信息 -->
             <div class="stats-container">
                 <h4>系統統計</h4>
@@ -69,7 +75,7 @@
                     最後更新: <span class="stat-value" id="lastUpdate">-</span>
                 </div>
             </div>
-            
+
             <!-- 设置选项 -->
             <div class="stats-container">
                 <h4>設置選項</h4>
@@ -86,33 +92,34 @@
                 </div>
             </div>
             <a style="color: #6b3f4aac;" href="https://space.bilibili.com/470023065?spm_id_from=333.1007.0.0">
-            <h4 style="color: #6b3f4aaa;">关注喵~</h4>
+                <h4 style="color: #6b3f4aaa;">关注喵~</h4>
             </a>
-             <a style="color: #16182380;" href="https://www.douyin.com/user/MS4wLjABAAAAfAvvj21s4RxLYdzQV5gWxNIL4eYKD5authYE8WXD6i99MC0-RaUhAPLIIes2EC4w?from_tab_name=main">
-            <h4 style="color: #161823aa;">关注喵~</h4>
+            <a style="color: #16182380;"
+                href="https://www.douyin.com/user/MS4wLjABAAAAfAvvj21s4RxLYdzQV5gWxNIL4eYKD5authYE8WXD6i99MC0-RaUhAPLIIes2EC4w?from_tab_name=main">
+                <h4 style="color: #161823aa;">关注喵~</h4>
             </a>
         </aside>
-        
-        
+
+
         <!-- 主内容区域 -->
         <main class="main-content">
             <header>
                 <h1>古籍篆楷轉換臺</h1>
                 <p>將繁體字轉換為篆書楷化正字，體驗古籍文字之美</p>
             </header>
-            
+
             <!-- 输入区域 -->
             <section class="section input-area">
                 <h2>文字輸入</h2>
                 <textarea id="inputText" class="vertical-textarea" placeholder="請在此處輸入繁體字...">天地日月山水木金火土</textarea>
-                
+
                 <div class="button-group">
                     <button id="convertBtn" class="vertical-button">執行轉換</button>
                     <button id="clearBtn" class="vertical-button">清空內容</button>
                     <button id="sampleBtn" class="vertical-button">載入示例</button>
                 </div>
             </section>
-            
+
             <!-- 输出区域 -->
             <section class="section output-area">
                 <h2>轉換結果</h2>
@@ -135,14 +142,14 @@
                     </div>
                     <p>請在左側輸入繁體字進行轉換。</p>
                 </div>
-                
+
                 <div class="button-group">
                     <button id="copyBtn" class="vertical-button">複製結果</button>
                     <button id="saveBtn" class="vertical-button">保存文字</button>
                     <button id="fontTestBtn" class="vertical-button">字體測試</button>
                 </div>
             </section>
-            
+
             <!-- 使用说明 -->
             <section class="section">
                 <h2>使用說明</h2>
@@ -155,67 +162,71 @@
                     <p>6. 如需更改字體，點擊「字體設置」按鈕</p>
                 </div>
             </section>
-            
+
             <!-- 状态栏 -->
             <div class="status-bar">
                 <span class="status-indicator status-good" id="statusIndicator"></span>
-                <span id="statusText">系統就緒</span> | 
-                <span>映射數: <span id="mappingCount">0</span></span> | 
-                <span>轉換次數: <span id="conversionCount">0</span></span> | 
+                <span id="statusText">系統就緒</span> |
+                <span>映射數: <span id="mappingCount">0</span></span> |
+                <span>轉換次數: <span id="conversionCount">0</span></span> |
                 <span>字體: <span id="currentFont">系統默認</span></span>
             </div>
         </main>
-        
+
 
     </div>
     <!-- 内嵌的第三方简繁转换网站 -->
     <iframe id="conversionPanel" src="https://fanyi.baidu.com/m/trans?from=zh&to=cht&query=漢" title="简繁转换工具"></iframe>
-    
+
     <!-- 字体设置面板 -->
     <div id="fontSettingsPanel">
         <button class="close-font-btn" id="closeFontBtn">×</button>
         <h3>字體設置</h3>
-        
+
         <div class="font-tab">
             <button class="font-tab-btn active" data-tab="cloud">雲端字體</button>
             <button class="font-tab-btn" data-tab="local">本地字體</button>
             <button class="font-tab-btn" data-tab="system">系統字體</button>
         </div>
-        
+
         <!-- 云端字体选项卡 -->
         <div id="cloud-tab" class="font-tab-content active">
             <p>選擇一個雲端字體：</p>
-            
-            <div class="font-option" data-font="Huiwen" data-url="https://raw.githubusercontent.com/dynnbw/Chinese-to-Classical-Chinese-Regular-Script/refs/heads/main/fonts/%E6%B1%87%E6%96%87%E4%BB%BF%E5%AE%8Bv1.001.ttf">
+
+            <div class="font-option" data-font="Huiwen"
+                data-url="https://raw.githubusercontent.com/dynnbw/Chinese-to-Classical-Chinese-Regular-Script/refs/heads/main/fonts/%E6%B1%87%E6%96%87%E4%BB%BF%E5%AE%8Bv1.001.ttf">
                 <div class="font-name">汇文仿宋</div>
                 <div class="font-description">支持大量漢字，包括部分擴展區字符，適合古籍顯示</div>
                 <div class="font-preview" style="font-family: 'Huiwen', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
             </div>
-            
-            <div class="font-option" data-font="noto-serif" data-url="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap">
+
+            <div class="font-option" data-font="noto-serif"
+                data-url="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap">
                 <div class="font-name">思源宋體 (Noto Serif SC)</div>
                 <div class="font-description">Google開源字體，支持簡體和繁體中文</div>
                 <div class="font-preview" style="font-family: 'Noto Serif SC', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
             </div>
-            
-            <div class="font-option" data-font="MiSans" data-url="https://raw.githubusercontent.com/dynnbw/Chinese-to-Classical-Chinese-Regular-Script/refs/heads/main/fonts/MiSans%20L3.ttf">
+
+            <div class="font-option" data-font="MiSans"
+                data-url="https://raw.githubusercontent.com/dynnbw/Chinese-to-Classical-Chinese-Regular-Script/refs/heads/main/fonts/MiSans%20L3.ttf">
                 <div class="font-name">MiSans_L3</div>
                 <div class="font-description">支持大量生僻字，注:本字体版权归属小米科技有限责任公司</div>
                 <div class="font-preview" style="font-family: 'MiSans_L3', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
             </div>
-            
+
             <div class="font-option" data-font="custom-url">
                 <div class="font-name">自定義字體URL</div>
                 <div class="font-description">輸入自定義字體的URL地址</div>
-                <input type="text" id="customFontUrl" class="url-input" placeholder="輸入字體文件URL (支持 .woff, .woff2, .ttf, .otf)">
+                <input type="text" id="customFontUrl" class="url-input"
+                    placeholder="輸入字體文件URL (支持 .woff, .woff2, .ttf, .otf)">
                 <div class="font-preview" id="customFontPreview">預覽文字</div>
             </div>
         </div>
-        
+
         <!-- 本地字体选项卡 -->
         <div id="local-tab" class="font-tab-content">
             <p>上傳本地字體文件：</p>
-            
+
             <div class="file-input-container">
                 <label class="file-input-label">
                     選擇字體文件
@@ -223,7 +234,7 @@
                 </label>
                 <div id="selectedFileName" style="margin-top: 0.5em; font-size: 0.9em; color: #7a6c55;"></div>
             </div>
-            
+
             <div class="font-option">
                 <div class="font-name">上傳說明</div>
                 <div class="font-description">
@@ -232,45 +243,58 @@
                     <p>字體文件僅在當前瀏覽器會話中加載</p>
                 </div>
             </div>
-            
+
             <div class="font-test-area">
                 <div class="font-test-text" id="localFontPreview">上傳後在此預覽字體效果</div>
             </div>
         </div>
-        
+
         <!-- 系统字体选项卡 -->
         <div id="system-tab" class="font-tab-content">
             <p>選擇系統字體：</p>
-            
+
             <div class="font-option" data-font="system-default">
                 <div class="font-name">系統默認</div>
                 <div class="font-description">使用瀏覽器默認字體設置</div>
                 <div class="font-preview">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
             </div>
-            
+
             <div class="font-option" data-font="system-serif">
                 <div class="font-name">襯線字體 (Serif)</div>
                 <div class="font-description">傳統印刷風格，適合古籍顯示</div>
                 <div class="font-preview" style="font-family: serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
             </div>
-            
+
             <div class="font-option" data-font="system-sans">
                 <div class="font-name">無襯線字體 (Sans-serif)</div>
                 <div class="font-description">現代簡潔風格</div>
                 <div class="font-preview" style="font-family: sans-serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
             </div>
         </div>
-        
+
         <button class="apply-font-btn" id="applyFontBtn">應用字體</button>
-        
+
         <div class="font-test-area">
             <p>字體測試區域：</p>
             <div class="font-test-text" id="fontTestText">天地日月山水木金火土 漢書樂龜龍馬鳥魚</div>
             <div class="font-test-text" id="fontTestText2">篆書楷化字示例：𠀘𡍑𡆠𡴑𡴸𣱱𤆄𣎳𨤾𡈽</div>
         </div>
     </div>
- 
-      <script src="src/js/CtoChin.js"></script> <!-- 引入 JavaScript 文件 -->
-      <script src="src/js/script.js"></script> <!-- 引入 JavaScript 文件 -->
+
+    <script src="src/js/CtoChin.js"></script> <!-- 引入 JavaScript 文件 -->
+    <script src="src/js/script.js"></script> <!-- 引入 JavaScript 文件 -->
+
+    <!-- 噪声滤镜定义（核心依赖，不可删除） -->
+    <svg>
+        <filter id="noise-filter-1">
+            <feTurbulence type="fractalNoise" baseFrequency="0.25" numOctaves="4" stitchTiles="stitch" />
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.08 0" />
+        </filter>
+        <filter id="noise-filter-2">
+            <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" stitchTiles="stitch" />
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.06 0" />
+        </filter>
+    </svg>
 </body>
+
 </html>
