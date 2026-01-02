@@ -4,7 +4,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: "Microsoft YaHei", "SimSun", serif;
             background-color: #fefaf0;
@@ -19,25 +19,25 @@
             overflow-x: auto;
             overflow-y: hidden;
             /* 非均匀渐变纹理 */
-            background-image: 
-                linear-gradient(120deg, rgba(0,0,0,0.01) 0%, transparent 60%),
-                linear-gradient(240deg, rgba(0,0,0,0.012) 0%, transparent 70%),
-                linear-gradient(45deg, rgba(0,0,0,0.006) 0%, transparent 50%);
+            background-image:
+                linear-gradient(120deg, rgba(0, 0, 0, 0.01) 0%, transparent 60%),
+                linear-gradient(240deg, rgba(0, 0, 0, 0.012) 0%, transparent 70%),
+                linear-gradient(45deg, rgba(0, 0, 0, 0.006) 0%, transparent 50%);
             /* 纸张轻微厚度感阴影 */
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.02);
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.02);
             position: relative;
             overflow: hidden;
         }
-        
+
         /* 第一层大颗粒噪声 */
         body::before {
             content: "";
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.02);
+            width: auto;
+            height: auto;
+            background: rgba(0, 0, 0, 0.02);
             filter: url(#noise-filter-1);
             pointer-events: none;
         }
@@ -48,14 +48,14 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.015);
+            width: auto;
+            height: auto;
+            background: rgba(0, 0, 0, 0.015);
             filter: url(#noise-filter-2);
             pointer-events: none;
         }
 
-       /* 噪声滤镜 */
+        /* 噪声滤镜 */
         svg {
             position: absolute;
             width: 0;
@@ -70,7 +70,7 @@
             height: 100vh;
             padding-right: 1em;
         }
-        
+
         /* ========== 主内容区域 ========== */
         .main-content {
             flex: 1;
@@ -80,7 +80,7 @@
             overflow-y: auto;
             overflow-x: hidden;
         }
-        
+
         /* ========== 控制面板 ========== */
         .control-panel {
             width: 9em;
@@ -92,7 +92,7 @@
             align-items: center;
             gap: 0.5em;
         }
-        
+
         /* ========== 头部样式 ========== */
         header {
             text-align: center;
@@ -100,7 +100,7 @@
             padding-bottom: 0.5em;
             border-bottom: 1px solid #d4c29e;
         }
-        
+
         h1 {
             font-size: 2em;
             font-weight: normal;
@@ -108,15 +108,38 @@
             margin-bottom: 0.3em;
             color: #5d4a2e;
         }
-        
-        h2, h3, h4 {
+
+        h2,
+        h3,
+        h4 {
             font-weight: normal;
             text-align: center;
             margin: 0.5em 0;
             padding-bottom: 0.3em;
             border-bottom: 1px solid #e0d6c2;
         }
-        
+
+        /* ========== 社交链接容器 ========== */
+        .social-links {
+            width: 100%;
+            order: 99;
+            /* 放在控制面板最后 */
+            margin-top: 0.5em;
+            padding-top: 0.5em;
+            border-top: 1px solid rgba(224, 214, 194, 0.5);
+            display: flex;
+            justify-content: center;
+            gap: 0.5em;
+        }
+
+        /* 桌面端：社交链接垂直排列 */
+        @media (min-width: 769px) {
+            .social-links {
+                flex-direction: column;
+                gap: 0.2em;
+            }
+        }
+
         /* ========== 功能区样式 ========== */
         .section {
             margin-bottom: 1.5em;
@@ -125,12 +148,13 @@
             border: 1px solid #e0d6c2;
             border-radius: 4px;
         }
-        
+
         /* ========== 输入输出区域 ========== */
-        .input-area, .output-area {
+        .input-area,
+        .output-area {
             min-height: 10em;
         }
-        
+
         .vertical-textarea {
             width: 100%;
             min-height: 98%;
@@ -141,20 +165,27 @@
             border-radius: 4px;
             font-family: inherit;
             font-size: 1em;
-            resize: none;
-            /* 竖排输入 */
+            resize: both;
+            /* 允许用户调整大小 */
+
+            /* 竖排输入优化 */
             writing-mode: vertical-rl;
             -webkit-writing-mode: vertical-rl;
             text-orientation: mixed;
             -webkit-text-orientation: mixed;
             overflow-y: auto;
             overflow-x: hidden;
+
             /* 字符保护 */
             word-break: keep-all;
             white-space: pre-wrap;
             unicode-bidi: plaintext;
+
+            /* 关键：确保文本边界框正确 */
+            box-sizing: border-box;
+            display: block;
         }
-        
+
         .result-container {
             min-height: 98%;
             padding: 0.8em;
@@ -168,8 +199,9 @@
             white-space: pre-wrap;
             unicode-bidi: plaintext;
             line-height: 1.8;
+            resize: both;
         }
-        
+
         /* ========== 按钮样式 ========== */
         .vertical-button {
             writing-mode: vertical-rl;
@@ -191,32 +223,32 @@
             white-space: nowrap;
             text-align: center;
         }
-        
+
         .vertical-button:hover {
             background-color: #d8ceaa;
             transform: translateY(-1px);
         }
-        
+
         .button-group {
             display: flex;
             justify-content: center;
             gap: 0.5em;
             margin-top: 0.5em;
         }
-        
+
         /* ========== 特殊按钮样式 ========== */
         #togglePanelBtn {
             background-color: #b8a276;
             color: #fffef9;
             font-weight: bold;
         }
-        
+
         #fontSettingsBtn {
             background-color: #8a6d46;
             color: #fffef9;
             font-weight: bold;
         }
-        
+
         /* ========== 篆书字符样式 ========== */
         .seal-char {
             font-size: 1.2em;
@@ -225,31 +257,31 @@
             margin: 0.1em;
             display: inline-block;
         }
-        
+
         .comparison {
             display: flex;
             flex-direction: column;
             align-items: center;
             margin: 0.3em 0;
         }
-        
+
         .original-char {
             font-size: 1em;
             color: #3c2f23;
         }
-        
+
         .converted-char {
             font-size: 1.3em;
             color: #8B4513;
             font-weight: bold;
         }
-        
+
         .arrow {
             font-size: 1.1em;
             color: #b8a276;
             margin: 0.2em 0;
         }
-        
+
         /* ========== 状态指示器 ========== */
         .status-bar {
             font-size: 0.8em;
@@ -259,7 +291,7 @@
             padding-top: 0.5em;
             border-top: 1px solid #e0d6c2;
         }
-        
+
         .status-indicator {
             display: inline-block;
             width: 8px;
@@ -267,21 +299,22 @@
             border-radius: 50%;
             margin: 0 3px;
         }
-        
+
         .status-good {
             background-color: #4CAF50;
         }
-        
+
         .status-warning {
             background-color: #FFC107;
         }
-        
+
         .status-error {
             background-color: #F44336;
         }
-        
+
         /* ========== 面板容器 ========== */
-        #conversionPanel, #fontSettingsPanel {
+        #conversionPanel,
+        #fontSettingsPanel {
             display: none;
             position: fixed;
             top: 5%;
@@ -289,11 +322,11 @@
             width: 75%;
             height: 50%;
             border: 2px solid #c9b88a;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
             z-index: 1000;
             background-color: white;
         }
-        
+
         /* 字体设置面板特殊样式 */
         #fontSettingsPanel {
             background-color: #fffef9;
@@ -301,23 +334,24 @@
             overflow-y: auto;
             z-index: 1001;
         }
-        
+
         /* 遮罩层 */
-        .iframe-overlay, .font-overlay {
+        .iframe-overlay,
+        .font-overlay {
             display: none;
             position: fixed;
             top: 0;
             left: 0%;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0, 0, 0, 0.5);
             z-index: 999;
         }
-        
+
         .font-overlay {
             z-index: 998;
         }
-        
+
         /* 关闭按钮 */
         .close-panel-btn {
             position: fixed;
@@ -336,7 +370,7 @@
             justify-content: center;
             align-items: center;
         }
-        
+
         .close-font-btn {
             position: absolute;
             top: 10px;
@@ -354,14 +388,14 @@
             justify-content: center;
             align-items: center;
         }
-        
+
         /* ========== 字体设置界面样式 ========== */
         .font-tab {
             display: flex;
             margin-bottom: 1em;
             border-bottom: 1px solid #e0d6c2;
         }
-        
+
         .font-tab button {
             padding: 0.5em 1em;
             background: none;
@@ -371,20 +405,20 @@
             font-family: inherit;
             color: #3c2f23;
         }
-        
+
         .font-tab button.active {
             border-bottom: 2px solid #b8a276;
             font-weight: bold;
         }
-        
+
         .font-tab-content {
             display: none;
         }
-        
+
         .font-tab-content.active {
             display: block;
         }
-        
+
         .font-option {
             background-color: #f8f5ee;
             border: 1px solid #e0d6c2;
@@ -394,38 +428,38 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        
+
         .font-option:hover {
             background-color: #f0ebdf;
             border-color: #c9b88a;
         }
-        
+
         .font-option.selected {
             background-color: #e6dfc6;
             border-color: #b8a276;
             border-width: 2px;
         }
-        
+
         .font-preview {
             font-size: 1.2em;
             margin: 0.5em 0;
             text-align: center;
         }
-        
+
         .font-name {
             font-weight: bold;
             margin-bottom: 0.3em;
         }
-        
+
         .font-description {
             font-size: 0.8em;
             color: #7a6c55;
         }
-        
+
         .file-input-container {
             margin: 1em 0;
         }
-        
+
         .file-input-label {
             display: inline-block;
             padding: 0.5em 1em;
@@ -435,15 +469,15 @@
             cursor: pointer;
             transition: background-color 0.2s;
         }
-        
+
         .file-input-label:hover {
             background-color: #d8ceaa;
         }
-        
+
         .file-input {
             display: none;
         }
-        
+
         .url-input {
             width: 100%;
             padding: 0.5em;
@@ -452,7 +486,7 @@
             margin-top: 0.5em;
             font-family: inherit;
         }
-        
+
         .apply-font-btn {
             width: 5%;
             padding: 0.8em;
@@ -462,14 +496,20 @@
             border-radius: 4px;
             font-size: 1em;
             cursor: pointer;
-            margin-top: 1em;
+            margin: 1em auto;
+            /* 居中对齐 */
+            margin-top: 3%;
+            display: block;
+            /* 确保按钮是块级元素，可以居中 */
             font-weight: bold;
+            margin-left: auto;
+            margin-right: auto;
         }
-        
+
         .apply-font-btn:hover {
             background-color: #9c8a62;
         }
-        
+
         .font-test-area {
             background-color: #f8f5ee;
             border: 1px solid #e0d6c2;
@@ -478,12 +518,12 @@
             margin-top: 1em;
             text-align: center;
         }
-        
+
         .font-test-text {
             font-size: 1.1em;
             margin: 0.5em 0;
         }
-        
+
         /* ========== 统计信息样式 ========== */
         .stats-container {
             background-color: #f8f5ee;
@@ -493,23 +533,23 @@
             margin: 0.5em 0;
             text-align: center;
         }
-        
+
         .stat-item {
             margin: 0.3em 0;
             font-size: 0.9em;
         }
-        
+
         .stat-value {
             font-weight: bold;
             color: #8a6d46;
         }
-        
+
         /* ========== 工具提示 ========== */
         .tooltip {
             position: relative;
             display: inline-block;
         }
-        
+
         .tooltip .tooltiptext {
             visibility: hidden;
             width: 8em;
@@ -528,14 +568,15 @@
             font-size: 0.75em;
             writing-mode: horizontal-tb;
         }
-        
+
         .tooltip:hover .tooltiptext {
             visibility: visible;
             opacity: 1;
         }
-        
+
         /* ========== 响应式设计 ========== */
         @media (max-width: 768px) {
+
             /* 手机横排布局 */
             body {
                 writing-mode: horizontal-tb;
@@ -544,20 +585,20 @@
                 overflow-y: auto;
                 height: auto;
             }
-            
+
             .app-container {
                 flex-direction: column;
                 padding-right: 0;
                 height: auto;
             }
-            
+
             .main-content {
                 border-left: none;
                 border-top: 1px solid #e0d6c2;
                 margin-left: 0;
                 padding: 0.5em;
             }
-            
+
             .control-panel {
                 width: 100%;
                 border-left: none;
@@ -567,71 +608,112 @@
                 justify-content: center;
                 padding: 0.5em;
             }
-            
+
             .vertical-button {
                 writing-mode: horizontal-tb;
                 -webkit-writing-mode: horizontal-tb;
                 padding: 0.8em 1.2em;
                 margin: 0.2em;
             }
-            
+
             .vertical-textarea {
                 writing-mode: horizontal-tb;
                 -webkit-writing-mode: horizontal-tb;
                 height: 8em;
             }
-            
-            #conversionPanel, #fontSettingsPanel {
+
+            #conversionPanel,
+            #fontSettingsPanel {
                 top: 5%;
                 left: 5%;
                 width: 90%;
                 height: 90%;
             }
-            
+
+            .apply-font-btn {
+                width: auto;
+                min-width: 120px;
+                max-width: 200px;
+                padding: 1em 1.5em;
+                font-size: 1em;
+                margin: 1em auto;
+                /* 居中对齐 */
+            }
+
             .close-panel-btn {
                 top: 4%;
                 left: 4%;
             }
-            
+
             h1 {
                 font-size: 1.5em;
             }
-            
+
             .tooltip .tooltiptext {
                 left: 50%;
                 top: 120%;
                 transform: translateX(-50%);
             }
-            
+
             .comparison {
                 flex-direction: row;
             }
-            
-            .original-char, .converted-char, .arrow {
+
+            .original-char,
+            .converted-char,
+            .arrow {
                 margin: 0 0.3em;
             }
         }
-        
+
+        /* 手机端：社交链接水平排列 */
+        @media (max-width: 768px) {
+            .social-links {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                /* 两列等宽 */
+                gap: 0.3em;
+                padding: 0.3em;
+            }
+
+            .social-links a {
+                width: 100%;
+                padding: 0.3em 0;
+                text-align: center;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .social-links a h4 {
+                font-size: 1.4em;
+                padding: 0.2em 0.4em;
+                margin: 0;
+            }
+        }
+
         /* 平板设备优化 */
         @media (min-width: 769px) and (max-width: 1024px) {
+
+            .result-container {
+                line-height: 1;
+                padding: 0.6em;
+                max-height: 18em;
+            }
+
             .app-container {
                 padding-right: 0.5em;
             }
-            
+
             .main-content {
                 padding: 0.8em;
             }
-            
+
             .vertical-textarea {
-                width: 12em;
-                height: 10em;
+                width: 5em;
+                height: 18em;
             }
-            
-            #conversionPanel, #fontSettingsPanel {
-                left: 90%;
-                width: 50%;
-            }
-            
+
             .close-panel-btn {
                 left: 19%;
             }
