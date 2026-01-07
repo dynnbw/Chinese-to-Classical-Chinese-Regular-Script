@@ -169,7 +169,7 @@ function updateDirectionDisplay() {
 
     if (AppState.conversionDirection === 'toSeal') {
         // 繁体 → 篆书
-        directionBtn.textContent = '繁→篆';
+        directionBtn.textContent = '繁→篆楷';
         directionBtn.title = '当前：繁体转篆书，点击切换为篆书转繁体';
         directionBtn.style.backgroundColor = '#e6dfc6';
 
@@ -186,7 +186,7 @@ function updateDirectionDisplay() {
         updateStatus('當前轉換方向：繁體字 → 篆書楷化字', 'good');
     } else {
         // 篆书 → 繁体
-        directionBtn.textContent = '篆→繁';
+        directionBtn.textContent = '篆楷→繁';
         directionBtn.title = '当前：篆书转繁体，点击切换为繁体转篆书';
         directionBtn.style.backgroundColor = '#b8a276';
 
@@ -348,10 +348,8 @@ function formatConversionResult(original, converted, stats) {
             </div>`;
         });
     } else {
-        // 普通模式
-        html += `<strong>${fromLabel} → ${toLabel} 轉換完成:</strong> ${stats.converted}/${stats.total} 個字符被轉換<br>`;
-        html += `<strong>轉換結果:</strong><br>`;
 
+        // 普通模式
         const safeConverted = safeString(converted);
         const chars = [];
 
@@ -370,8 +368,9 @@ function formatConversionResult(original, converted, stats) {
             chars.push(safeConverted.charAt(i));
         }
 
+        // 为每个字符创建span，添加pure-char类以便提取
         chars.forEach(char => {
-            html += `<span class="${direction === 'toSeal' ? 'seal-char' : ''}">${char}</span>`;
+            html += `<span class="pure-char ${direction === 'toSeal' ? 'seal-char' : ''}">${char}</span>`;
         });
     }
 
@@ -1005,6 +1004,93 @@ function loadConversionDirection() {
     return false;
 }
 
+// ========== 新增：图片生成器功能 ==========
+
+/**
+ * 提取纯文字从输出区域
+ */
+function extractPureTextFromOutput() {
+    const outputTextEl = document.getElementById('outputText');
+    if (!outputTextEl) return '';
+
+    // 方法1: 从特定的CSS类中提取
+    const convertedChars = outputTextEl.querySelectorAll('.seal-char, .converted-char, .pure-char');
+    if (convertedChars.length > 0) {
+        let pureText = '';
+        convertedChars.forEach(char => {
+            const text = char.textContent.trim();
+            if (text && !text.includes('轉換') && !text.includes('字符')) {
+                pureText += text;
+            }
+        });
+        if (pureText) return pureText;
+    }
+
+    // 方法2: 从整个输出中提取中文字符
+    const text = outputTextEl.textContent || outputTextEl.innerText || '';
+
+    // 过滤掉统计信息和说明文字
+    const unwantedPatterns = [
+        '轉換完成:',
+        '個字符被轉換',
+        '轉換結果',
+        '請在左側輸入',
+        '繁體字.*篆書楷化字',
+        '篆書楷化字.*繁體字',
+        '→'
+    ];
+
+    let cleanedText = text;
+    unwantedPatterns.forEach(pattern => {
+        const regex = new RegExp(pattern, 'g');
+        cleanedText = cleanedText.replace(regex, '');
+    });
+
+    // 只保留中文字符和扩展字符
+    const chineseChars = cleanedText.match(/[\u4e00-\u9fa5\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf]/g);
+    return chineseChars ? chineseChars.join('') : '';
+}
+
+/**
+ * 打开图片生成器并传递纯文字
+ */
+function openImageGenerator() {
+    const inputTextEl = document.getElementById('inputText');
+    if (!inputTextEl || !inputTextEl.value.trim()) {
+        updateStatus('請先輸入要轉換的文字', 'warning');
+        return;
+    }
+
+    // 优先从输出区域提取纯文字
+    let resultText = extractPureTextFromOutput();
+
+    // 如果提取失败或太短，执行转换
+    if (!resultText || resultText.length < 2) {
+        const { result } = convertText(inputTextEl.value);
+        resultText = result || inputTextEl.value;
+    }
+
+    // 最终清理
+    resultText = resultText.replace(/\s+/g, '');
+
+    // 如果还是空，使用输入文本
+    if (!resultText.trim()) {
+        resultText = inputTextEl.value.trim();
+    }
+
+    console.log('传递给图片生成器的文字:', resultText);
+    console.log('文字长度:', resultText.length);
+
+    // 编码并打开图片生成器
+    const encodedText = encodeURIComponent(resultText);
+    const imagePageUrl = `seal-image-generator.html?text=${encodedText}`;
+
+    window.open(imagePageUrl, '_blank', 'width=1200,height=800');
+    updateStatus('圖片生成器已打開', 'good');
+
+    return resultText;
+}
+
 // ========== 初始化與事件綁定 ==========
 
 function initializeEventListeners() {
@@ -1061,7 +1147,10 @@ function initializeEventListeners() {
         }
         updateStatus('已清空輸入和輸出', 'good');
     });
-
+    const imageGeneratorBtn = document.getElementById('imageGeneratorBtn');
+    if (imageGeneratorBtn) {
+        imageGeneratorBtn.addEventListener('click', openImageGenerator);
+    }
     // 输出相关按钮
     const copyBtn = document.getElementById('copyBtn');
     const saveBtn = document.getElementById('saveBtn');
@@ -1221,31 +1310,34 @@ function initializeEventListeners() {
 function initializeApp() {
     console.log('古籍篆楷轉換工具初始化...');
 
-    // 步骤1: 加载应用设置
+    // 加载应用设置
     loadAppSettings();
 
-    // 步骤2: 加载自定义映射
+    // 加载自定义映射
     loadCustomMappings();
 
-    // 步骤3: 构建反向映射表
+    // 构建反向映射表
     buildReverseMapping();
 
-    // 步骤4: 加载转换方向
+    // 加载转换方向
     loadConversionDirection();
 
-    // 步骤5: 初始化字体管理器
+    // 初始化字体管理器
     FontManager.init();
 
-    // 步骤6: 绑定事件监听器
+    // 绑定事件监听器
     initializeEventListeners();
 
-    // 步骤7: 初始化字体设置界面
+    // 初始化字体设置界面
     initializeFontSettings();
 
-    // 步骤8: 更新转换方向显示
+    // 更新转换方向显示
     updateDirectionDisplay();
 
-    // 步骤9: 恢复自定义字体URL
+   // 确保事件监听器正确初始化
+    initializeEventListeners();
+
+    // 恢复自定义字体URL
     try {
         const savedFontUrl = localStorage.getItem(STORAGE_KEYS.CUSTOM_FONT_URL);
         if (savedFontUrl) {
@@ -1263,10 +1355,10 @@ function initializeApp() {
         console.error('恢复自定义字体URL失败:', e);
     }
 
-    // 步骤10: 更新统计显示
+    // 更新统计显示
     updateStatsDisplay();
 
-    // 步骤11: 根据加载的设置更新复选框
+    // 根据加载的设置更新复选框
     const autoConvertEl = document.getElementById('autoConvert');
     const showCharCodesEl = document.getElementById('showCharCodes');
     const autoCopyEl = document.getElementById('autoCopy');

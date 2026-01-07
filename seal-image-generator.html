@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>篆書圖片生成器</title>
+    <link rel="stylesheet" href="src/css/seal-image-generator.css">
+</head>
+<body>
+    <!-- 新增：iframes遮罩层 -->
+    <div class="iframe-overlay" id="iframeOverlay"></div>
+    
+    <div class="app-container">
+        <!-- 左侧控制面板 -->
+        <aside class="control-panel">
+            <h3>圖片設置</h3>
+            
+            <!-- 字体设置 -->
+            <div class="font-settings-panel">
+                <h4>字體設置</h4>
+                
+                <div class="font-tabs">
+                    <button class="font-tab-btn active" data-tab="cloud">雲端字體</button>
+                    <button class="font-tab-btn" data-tab="local">本地字體</button>
+                    <button class="font-tab-btn" data-tab="system">系統字體</button>
+                </div>
+
+                <!-- 雲端字體選項卡 -->
+                <div id="cloud-tab" class="font-tab-content active">
+                    <div class="font-option" data-font="Huiwen" data-url="https://raw.githubusercontent.com/dynnbw/Chinese-to-Classical-Chinese-Regular-Script/refs/heads/main/fonts/%E6%B1%87%E6%96%87%E4%BB%BF%E5%AE%8Bv1.001.ttf">
+                        <div class="font-name">汇文仿宋</div>
+                        <div class="font-description">支持大量漢字，包括部分擴展區字符</div>
+                    </div>
+
+                    <div class="font-option" data-font="noto-serif" data-url="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap">
+                        <div class="font-name">思源宋體</div>
+                        <div class="font-description">支持簡繁中文</div>
+                    </div>
+                </div>
+
+                <!-- 本地字體選項卡 -->
+                <div id="local-tab" class="font-tab-content">
+                    <div class="file-input-container">
+                        <label class="file-input-label">
+                            選擇本地字體文件
+                            <input type="file" id="localFontFile" class="file-input" accept=".ttf,.otf,.woff,.woff2,.eot">
+                        </label>
+                        <div id="selectedFileName" class="selected-file">未選擇文件</div>
+                    </div>
+                </div>
+
+                <!-- 系統字體選項卡 -->
+                <div id="system-tab" class="font-tab-content">
+                    <div class="font-option" data-font="system-default">
+                        <div class="font-name">系統默認</div>
+                    </div>
+                    <div class="font-option" data-font="system-serif">
+                        <div class="font-name">襯線字體</div>
+                    </div>
+                </div>
+
+                <button class="apply-font-btn" id="applyFontBtn">應用字體</button>
+            </div>
+
+            <!-- 布局设置 -->
+            <div class="layout-settings">
+                <h4>佈局設置</h4>
+                
+                <div class="option-group">
+                    <div class="option-row">
+                        <label class="checkbox-label">
+                            <input type="radio" name="layout" value="vertical" checked>
+                            豎排 (古籍樣式)
+                        </label>
+                    </div>
+                    <div class="option-row">
+                        <label class="checkbox-label">
+                            <input type="radio" name="layout" value="horizontal">
+                            橫排
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="option-row">
+                    <span>字體大小:</span>
+                    <input type="number" id="fontSize" class="option-input" value="36" min="12" max="72">
+                </div>
+                
+                <div class="option-row">
+                    <span>行間距:</span>
+                    <input type="number" id="lineHeight" class="option-input" value="1.8" step="0.1" min="1" max="3">
+                </div>
+                
+                <div class="option-row">
+                    <span>頁邊距:</span>
+                    <input type="number" id="marginSize" class="option-input" value="40" min="10" max="100">
+                </div>
+            </div>
+
+            <!-- 样式设置 -->
+            <div class="style-settings">
+                <h4>樣式設置</h4>
+                
+                <div class="option-row">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showGrid" checked>
+                        顯示古籍網格
+                    </label>
+                </div>
+                
+                <div class="option-row">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="paperTexture">
+                        紙張紋理效果
+                    </label>
+                </div>
+                
+                <div class="option-row">
+                    <span>背景顏色:</span>
+                    <input type="color" id="bgColor" value="#fefaf0">
+                </div>
+                
+                <div class="option-row">
+                    <span>文字顏色:</span>
+                    <input type="color" id="textColor" value="#3c2f23">
+                </div>
+                
+                <div class="option-row">
+                    <span>篆書顏色:</span>
+                    <input type="color" id="sealColor" value="#8B4513">
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="action-buttons">
+                <button class="action-btn" id="generateBtn">生成圖片</button>
+                <button class="action-btn" id="downloadPngBtn">下載PNG</button>
+                <button class="action-btn" id="downloadJpgBtn">下載JPG</button>
+                <button class="action-btn" id="copyImageBtn">複製圖片</button>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <header>
+                <h1>篆書圖片生成器</h1>
+                <p>圖片生成工具，支持自定義字體和樣式設置</p>
+            </header>
+
+            <!-- 文字输入区域 -->
+            <section class="section input-area">
+                <h2>文字輸入</h2>
+                <textarea class="vertical-textarea" id="textInput" placeholder="請在此處輸入要生成圖片的中文字符...">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</textarea>
+                
+                <div class="button-group">
+                    <button class="vertical-button" id="clearBtn">清空</button>
+                    <button class="vertical-button" id="sampleBtn">示例</button>
+                </div>
+            </section>
+
+            <!-- 图片预览区域 -->
+            <section class="section preview-area">
+                <h2>圖片預覽</h2>
+                <div class="image-preview">
+                    <div class="loading-overlay" id="loadingOverlay">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    <canvas id="imageCanvas"></canvas>
+                </div>
+            </section>
+
+            <!-- 状态栏 -->
+            <div class="status-bar">
+                <span class="status-indicator" id="statusIndicator"></span>
+                <span id="statusText">就緒，請輸入文字並選擇字體</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- 噪声滤镜定义 -->
+    <svg style="position: absolute; width: 0; height: 0; visibility: hidden;">
+        <filter id="noise-filter-1">
+            <feTurbulence type="fractalNoise" baseFrequency="0.25" numOctaves="4" stitchTiles="stitch" />
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.08 0" />
+        </filter>
+        <filter id="noise-filter-2">
+            <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" stitchTiles="stitch" />
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.06 0" />
+        </filter>
+    </svg>
+    
+    <script src="src/js/seal-image-generator.js"></script>
+</body>
+</html>

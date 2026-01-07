@@ -133,12 +133,11 @@
         }
 
         /* 桌面端：社交链接垂直排列 */
-        @media (min-width: 769px) {
-            .social-links {
-                flex-direction: column;
-                gap: 0.2em;
-            }
+        .social-links {
+            flex-direction: column;
+            gap: 0.2em;
         }
+
 
         /* ========== 功能区样式 ========== */
         .section {
@@ -234,6 +233,15 @@
             justify-content: center;
             gap: 0.5em;
             margin-top: 0.5em;
+        }
+
+        #imageGeneratorBtn {
+            background-color: #8a6d46;
+            color: #fffef9;
+        }
+
+        #imageGeneratorBtn:hover {
+            background-color: #6b5534;
         }
 
         /* ========== 特殊按钮样式 ========== */
@@ -532,6 +540,7 @@
             padding: 0.8em;
             margin: 0.5em 0;
             text-align: center;
+            display: block !important;
         }
 
         .stat-item {
@@ -607,6 +616,7 @@
                 flex-wrap: wrap;
                 justify-content: center;
                 padding: 0.5em;
+                position: relative;
             }
 
             .vertical-button {
@@ -664,10 +674,8 @@
             .arrow {
                 margin: 0 0.3em;
             }
-        }
 
-        /* 手机端：社交链接水平排列 */
-        @media (max-width: 768px) {
+            /* 手机端：社交链接水平排列 */
             .social-links {
                 display: grid;
                 grid-template-columns: 1fr 1fr;

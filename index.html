@@ -55,7 +55,11 @@
                 <span class="tooltiptext">顯示系統調試信息</span>
             </div>
             <div class="tooltip">
-                <button id="toggleDirectionBtn" class="vertical-button">繁→篆</button>
+                <button href="seal-image-generator.html" target="_blank" class="vertical-button">圖片生成</button>
+                <span class="tooltiptext">打開圖片生成工具</span>
+            </div>
+            <div class="tooltip">
+                <button id="toggleDirectionBtn" class="vertical-button">繁→篆楷</button>
                 <span class="tooltiptext">切換轉換方向 (繁體↔篆書)</span>
             </div>
 
@@ -149,6 +153,7 @@
                     <button id="copyBtn" class="vertical-button">複製結果</button>
                     <button id="saveBtn" class="vertical-button">保存文字</button>
                     <button id="fontTestBtn" class="vertical-button">字體測試</button>
+                    <button id="imageGeneratorBtn" class="vertical-button">生成圖片</button>
                 </div>
             </section>
 
@@ -284,7 +289,7 @@
     </div>
 
     <script src="src/js/CtoChin.js"></script> <!-- 引入 JavaScript 文件 -->
-    <script src="src/js/script.js"></script> <!-- 引入 JavaScript 文件 -->
+    <script src="src/js/index.js"></script> <!-- 引入 JavaScript 文件 -->
 
     <!-- 噪声滤镜定义（核心依赖，不可删除） -->
     <svg>

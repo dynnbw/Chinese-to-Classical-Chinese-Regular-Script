@@ -1,0 +1,564 @@
+/* ========== 基础重置与全局样式 ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Microsoft YaHei", "SimSun", serif;
+    background-color: #fefaf0;
+    color: #3c2f23;
+    line-height: 1.6;
+    /* 核心：全局竖排设置 */
+    writing-mode: vertical-rl;
+    -webkit-writing-mode: vertical-rl;
+    text-orientation: mixed;
+    -webkit-text-orientation: mixed;
+    height: 100vh;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background-image:
+        linear-gradient(120deg, rgba(0, 0, 0, 0.01) 0%, transparent 60%),
+        linear-gradient(240deg, rgba(0, 0, 0, 0.012) 0%, transparent 70%),
+        linear-gradient(45deg, rgba(0, 0, 0, 0.006) 0%, transparent 50%);
+    box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.02);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 噪声滤镜 */
+body::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: auto;
+    height: auto;
+    background: rgba(0, 0, 0, 0.02);
+    filter: url(#noise-filter-1);
+    pointer-events: none;
+}
+
+body::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: auto;
+    height: auto;
+    background: rgba(0, 0, 0, 0.015);
+    filter: url(#noise-filter-2);
+    pointer-events: none;
+}
+
+svg {
+    position: absolute;
+    width: 0;
+    height: 0;
+    visibility: hidden;
+}
+
+/* ========== 布局容器 ========== */
+.app-container {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    padding-right: 1em;
+}
+
+/* ========== 控制面板 ========== */
+.control-panel {
+    width: 100%;
+    padding: 1em;
+    z-index: 10;
+    border-left: 1px solid #e0d6c2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5em;
+    overflow-y: auto;
+}
+
+.control-panel h3 {
+    font-weight: normal;
+    text-align: center;
+    margin: 0.5em 0;
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid #e0d6c2;
+    width: 100%;
+}
+
+.control-panel h4 {
+    font-weight: normal;
+    text-align: center;
+    margin: 0.3em 0;
+    font-size: 0.9em;
+    color: #7a6c55;
+}
+
+/* ========== 字体设置面板 ========== */
+.font-settings-panel,
+.layout-settings,
+.style-settings {
+    width: 100%;
+    background-color: #f8f5ee;
+    border: 1px solid #e0d6c2;
+    border-radius: 4px;
+    padding: 0.5em;
+    margin-bottom: 0.5em;
+}
+
+.font-tabs {
+    display: flex;
+    margin-bottom: 0.5em;
+    border-bottom: 1px solid #e0d6c2;
+}
+
+.font-tab-btn {
+    padding: 0.3em 0.5em;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    color: #3c2f23;
+    font-size: 0.8em;
+    flex: 1;
+    text-align: center;
+}
+
+.font-tab-btn.active {
+    border-bottom: 2px solid #b8a276;
+    font-weight: bold;
+}
+
+.font-tab-content {
+    display: none;
+}
+
+.font-tab-content.active {
+    display: block;
+}
+
+.font-option {
+    background-color: #fffef9;
+    border: 1px solid #e0d6c2;
+    border-radius: 4px;
+    padding: 0.5em;
+    margin-bottom: 0.5em;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.8em;
+}
+
+.font-option:hover {
+    background-color: #f0ebdf;
+    border-color: #c9b88a;
+}
+
+.font-option.selected {
+    background-color: #e6dfc6;
+    border-color: #b8a276;
+    border-width: 2px;
+}
+
+.font-name {
+    font-weight: bold;
+    margin-bottom: 0.2em;
+}
+
+.font-description {
+    font-size: 0.7em;
+    color: #7a6c55;
+}
+
+.file-input-container {
+    margin: 0.5em 0;
+}
+
+.file-input-label {
+    display: inline-block;
+    padding: 0.3em 0.5em;
+    background-color: #e6dfc6;
+    border: 1px solid #c9b88a;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 0.8em;
+    text-align: center;
+    width: 100%;
+}
+
+.file-input-label:hover {
+    background-color: #d8ceaa;
+}
+
+.file-input {
+    display: none;
+}
+
+.selected-file {
+    margin-top: 0.3em;
+    font-size: 0.7em;
+    color: #7a6c55;
+    word-break: break-all;
+}
+
+/* ========== 布局设置 ========== */
+.option-group {
+    margin-bottom: 0.5em;
+}
+
+.option-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.3em;
+    font-size: 0.8em;
+}
+
+.option-row span {
+    flex: 1;
+}
+
+.option-input {
+    width: 3em;
+    padding: 0.2em;
+    border: 1px solid #c9b88a;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+    cursor: pointer;
+    flex: 1;
+}
+
+.checkbox-label input {
+    margin: 0;
+}
+
+input[type="color"] {
+    width: 1.5em;
+    height: 1.5em;
+    border: 1px solid #c9b88a;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* ========== 按钮 ========== */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+    width: 100%;
+    margin-top: 0.5em;
+}
+
+.action-btn {
+    padding: 0.5em;
+    background-color: #b8a276;
+    border: 1px solid #9c8a62;
+    border-radius: 4px;
+    color: white;
+    font-family: inherit;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.action-btn:hover {
+    background-color: #9c8a62;
+    transform: translateY(-1px);
+}
+
+.apply-font-btn {
+    width: 100%;
+    padding: 0.3em;
+    background-color: #8a6d46;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.8em;
+    cursor: pointer;
+    margin-top: 0.5em;
+}
+
+.apply-font-btn:hover {
+    background-color: #6b5534;
+}
+
+/* ========== 主内容区域 ========== */
+.main-content {
+    flex: 1;
+    padding: 1em;
+    border-left: 1px solid #e0d6c2;
+    margin-left: 1em;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 1em;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid #d4c29e;
+}
+
+h1 {
+    font-size: 1.5em;
+    font-weight: normal;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.3em;
+    color: #5d4a2e;
+}
+
+h2 {
+    font-weight: normal;
+    text-align: center;
+    margin: 0.5em 0;
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid #e0d6c2;
+    font-size: 1.1em;
+}
+
+/* ========== 输入区域 ========== */
+.input-area {
+    min-height: 10em;
+    margin-bottom: 1em;
+}
+
+.vertical-textarea {
+    width: 100%;
+    min-height: 8em;
+    padding: 0.8em;
+    margin: 0.5em 0;
+    background-color: #fff;
+    border: 1px solid #c9b88a;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1em;
+    resize: both;
+    writing-mode: vertical-rl;
+    -webkit-writing-mode: vertical-rl;
+    text-orientation: mixed;
+    -webkit-text-orientation: mixed;
+    overflow-y: auto;
+    overflow-x: hidden;
+    word-break: keep-all;
+    white-space: pre-wrap;
+    unicode-bidi: plaintext;
+    box-sizing: border-box;
+    display: block;
+}
+
+.vertical-button {
+    writing-mode: vertical-rl;
+    -webkit-writing-mode: vertical-rl;
+    text-orientation: mixed;
+    -webkit-text-orientation: mixed;
+    width: auto;
+    height: auto;
+    padding: 1.2em 0.5em;
+    margin: 0.3em;
+    background-color: #e6dfc6;
+    border: 1px solid #c9b88a;
+    border-radius: 4px;
+    color: #3c2f23;
+    font-family: inherit;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.vertical-button:hover {
+    background-color: #d8ceaa;
+    transform: translateY(-1px);
+}
+
+.button-group {
+    display: flex;
+    justify-content: center;
+    gap: 0.5em;
+    margin-top: 0.5em;
+}
+
+/* ========== 图片预览区域 ========== */
+.preview-area {
+    margin-bottom: 1em;
+}
+
+.image-preview {
+    background-color: #fefaf0;
+    border: 1px solid #e0d6c2;
+    border-radius: 4px;
+    padding: 1em;
+    min-height: 20em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.image-preview canvas {
+    max-width: 100%;
+    max-height: 500px;
+    border: 1px solid #e0d6c2;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+/* ========== 状态栏 ========== */
+.status-bar {
+    font-size: 0.8em;
+    color: #666;
+    text-align: center;
+    margin-top: 1em;
+    padding-top: 0.5em;
+    border-top: 1px solid #e0d6c2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #4CAF50;
+}
+
+/* ========== 加载动画 ========== */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    display: none;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #b8a276;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ========== 遮罩层 ========== */
+.iframe-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0%;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+/* ========== 响应式设计 ========== */
+@media (max-width: 768px) {
+    /* 手机横排布局 */
+    body {
+        writing-mode: horizontal-tb;
+        -webkit-writing-mode: horizontal-tb;
+        overflow-x: hidden;
+        overflow-y: auto;
+        height: auto;
+    }
+
+    .app-container {
+        flex-direction: column;
+        padding-right: 0;
+        height: auto;
+    }
+
+    .control-panel {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #e0d6c2;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        padding: 0.5em;
+        order: 2;
+        margin-top: 1em;
+    }
+
+    .font-settings-panel,
+    .layout-settings,
+    .style-settings {
+        flex: 1;
+        min-width: 45%;
+        margin: 0.2em;
+    }
+
+    .action-buttons {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .action-btn {
+        flex: 1;
+        min-width: 120px;
+        margin: 0.2em;
+    }
+
+    .main-content {
+        border-left: none;
+        border-top: 1px solid #e0d6c2;
+        margin-left: 0;
+        padding: 0.5em;
+        order: 1;
+    }
+
+    .vertical-textarea {
+        writing-mode: horizontal-tb;
+        -webkit-writing-mode: horizontal-tb;
+        height: 6em;
+        min-height: 6em;
+    }
+
+    .vertical-button {
+        writing-mode: horizontal-tb;
+        -webkit-writing-mode: horizontal-tb;
+        padding: 0.8em 1.2em;
+        margin: 0.2em;
+    }
+
+    h1 {
+        font-size: 1.2em;
+    }
+
+    .image-preview {
+        min-height: 15em;
+    }
+
+    .image-preview canvas {
+        max-height: 300px;
+    }
+}
