@@ -63,6 +63,12 @@
                 <span class="tooltiptext">切換轉換方向 (繁體↔篆書)</span>
             </div>
 
+            <!-- 新增：缓存管理 -->
+            <div class="tooltip">
+                <button id="clearCacheBtn" class="vertical-button">清理緩存</button>
+                <span class="tooltiptext">清理字体和图片缓存</span>
+            </div>
+
             <!-- 统计信息 -->
             <div class="stats-container">
                 <h4>系統統計</h4>
@@ -74,6 +80,9 @@
                 </div>
                 <div class="stat-item">
                     轉換次數: <span class="stat-value" id="totalConversions">0</span>
+                </div>
+                <div class="stat-item">
+                    緩存大小: <span class="stat-value" id="cacheSize">0</span>
                 </div>
                 <div class="stat-item">
                     最後更新: <span class="stat-value" id="lastUpdate">-</span>
@@ -167,6 +176,7 @@
                     <p>4. 使用控制面板各項功能</p>
                     <p>5. 如需簡繁轉換，點擊「簡繁轉換」按鈕</p>
                     <p>6. 如需更改字體，點擊「字體設置」按鈕</p>
+                    <p>7. 定期點擊「清理緩存」按鈕釋放內存</p>
                 </div>
             </section>
 
@@ -176,6 +186,7 @@
                 <span id="statusText">系統就緒</span> |
                 <span>映射數: <span id="mappingCount">0</span></span> |
                 <span>轉換次數: <span id="conversionCount">0</span></span> |
+                <span>緩存: <span id="cacheSizeText">0</span></span> |
                 <span>字體: <span id="currentFont">系統默認</span></span>
             </div>
         </main>
@@ -183,7 +194,7 @@
 
     </div>
     <!-- 内嵌的第三方简繁转换网站 -->
-    <iframe id="conversionPanel" src="https://fanyi.baidu.com/m/trans?from=zh&to=cht&query=漢" title="简繁转换工具"></iframe>
+    <iframe id="conversionPanel" src="https://fanyi.baidu.com/mtpe-individual/transText#/" title="简繁转换工具"></iframe>
 
     <!-- 字体设置面板 -->
     <div id="fontSettingsPanel">
@@ -194,6 +205,7 @@
             <button class="font-tab-btn active" data-tab="cloud">雲端字體</button>
             <button class="font-tab-btn" data-tab="local">本地字體</button>
             <button class="font-tab-btn" data-tab="system">系統字體</button>
+            <button class="font-tab-btn" data-tab="compatibility">兼容模式</button>
         </div>
 
         <!-- 云端字体选项卡 -->
@@ -248,6 +260,7 @@
                     <p>支持的字體格式：TTF, OTF, WOFF, WOFF2, EOT</p>
                     <p>建議使用支持擴展漢字的字體</p>
                     <p>字體文件僅在當前瀏覽器會話中加載</p>
+                    <p style="color: #d9534f; font-weight: bold;">注意：使用後請及時清理緩存釋放內存</p>
                 </div>
             </div>
 
@@ -279,12 +292,71 @@
             </div>
         </div>
 
+        <!-- 兼容模式选项卡 -->
+        <div id="compatibility-tab" class="font-tab-content">
+            <p><strong>字符圖片顯示模式</strong></p>
+            <p>啟用此模式後，所有字符將通過圖片顯示，確保最大兼容性。</p>
+            
+            <div class="font-option" data-font="zdic-compatibility">
+                <div class="font-name">漢典SVG字庫</div>
+                <div class="font-description">
+                    <p>使用漢典網SVG字庫，支持9萬餘漢字</p>
+                    <p>圖片來源: <a href="https://www.zdic.net/" target="_blank">漢典網</a></p>
+                    <p>版权<a href="https://www.zdic.net/aboutus/copyright/" target="_blank">声明</a></p>
+                    <p>請在瀏覽器安裝CORS Unblock插件使用</p>
+                </div>
+                <div class="font-preview" id="zdicPreview">
+                    <div class="character-preview" style="display: flex; flex-wrap: wrap; gap: 5px;">
+                        <!-- 这里将显示字符预览 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="font-option" data-font="custom-compatibility">
+                <div class="font-name">自定義圖片字庫</div>
+                <div class="font-description">使用自定義的圖片字庫URL</div>
+                <input type="text" id="customImgUrl" class="url-input" 
+                       placeholder="輸入圖片URL模板，使用{unicode}作為碼點佔位符">
+                <div class="font-description" style="margin-top: 0.5em;">
+                    示例: https://example.com/fonts/{unicode}.png
+                </div>
+            </div>
+            
+            <div class="compatibility-settings">
+                <h4>圖片顯示設置</h4>
+                <label style="font-size: 0.9em; display: block; margin: 0.3em 0;">
+                    <input type="checkbox" id="imgCache" checked> 緩存圖片
+                </label>
+                <label style="font-size: 0.9em; display: block; margin: 0.3em 0;">
+                    <input type="checkbox" id="imgLazyLoad" checked> 延遲加載
+                </label>
+                <label style="font-size: 0.9em; display: block; margin: 0.3em 0;">
+                    圖片尺寸: 
+                    <input type="range" id="imgSize" min="16" max="100" value="20" style="width: 60%;">
+                    <span id="imgSizeValue">24px</span>
+                </label>
+                <label style="font-size: 0.9em; display: block; margin: 0.3em 0;">
+                    <input type="checkbox" id="showCharInAlt" checked> 在alt屬性顯示原字符
+                </label>
+                <label style="font-size: 0.9em; display: block; margin: 0.3em 0;">
+                    最大緩存數: 
+                    <input type="number" id="imgCacheMaxSize" min="10" max="25565" value="65535" style="width: 50px;">
+                </label>
+            </div>
+        </div>
+
         <button class="apply-font-btn" id="applyFontBtn">應用字體</button>
 
         <div class="font-test-area">
             <p>字體測試區域：</p>
             <div class="font-test-text" id="fontTestText">天地日月山水木金火土 漢書樂龜龍馬鳥魚</div>
             <div class="font-test-text" id="fontTestText2">篆書楷化字示例：𠀘𡍑𡆠𡴑𡴸𣱱𤆄𣎳𨤾𡈽</div>
+            
+            <p>兼容模式測試：</p>
+            <div class="compatibility-test-text" id="compatibilityTestText">
+                <p>啟用兼容模式後，此處將顯示圖片形式的字符。</p>
+            </div>
+            <button id="testCompatibilityBtn" class="vertical-button" style="margin-top: 0.5em;">測試兼容模式</button>
         </div>
     </div>
 

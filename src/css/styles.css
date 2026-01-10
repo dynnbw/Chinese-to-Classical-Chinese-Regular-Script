@@ -1,4 +1,4 @@
-        /* ========== 基础重置与全局样式 ========== */
+/* ========== 基础重置与全局样式 ========== */
         * {
             margin: 0;
             padding: 0;
@@ -255,6 +255,16 @@
             background-color: #8a6d46;
             color: #fffef9;
             font-weight: bold;
+        }
+
+        #clearCacheBtn {
+            background-color: #fccbdb;
+            color: #140a2d;
+            font-weight: bold;
+        }
+
+        #clearCacheBtn:hover {
+            background-color: #a56e7f;
         }
 
         /* ========== 篆书字符样式 ========== */
@@ -532,6 +542,71 @@
             margin: 0.5em 0;
         }
 
+        /* ========== 兼容模式样式 ========== */
+        .character-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .char-img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            vertical-align: middle;
+            border: 1px solid #e0d6c2;
+            background-color: white;
+            transition: transform 0.2s;
+        }
+
+        .char-img:hover {
+            transform: scale(1.2);
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .compatibility-result .char-container {
+            display: inline-block;
+            margin: 2px;
+            position: relative;
+        }
+
+        .compatibility-settings {
+            background-color: #f8f5ee;
+            border: 1px solid #e0d6c2;
+            border-radius: 4px;
+            padding: 1em;
+            margin: 1em 0;
+        }
+
+        .compatibility-test-text {
+            min-height: 60px;
+            border: 1px dashed #c9b88a;
+            border-radius: 4px;
+            padding: 1em;
+            background-color: #fffef9;
+        }
+
+        .img-loading {
+            opacity: 0.6;
+            filter: blur(1px);
+        }
+
+        .img-error {
+            filter: grayscale(100%);
+            opacity: 0.5;
+            border-color: #ff6b6b !important;
+        }
+
+        .fallback-char {
+            font-size: 1.2em;
+            color: #666;
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
         /* ========== 统计信息样式 ========== */
         .stats-container {
             background-color: #f8f5ee;
@@ -698,6 +773,12 @@
                 padding: 0.2em 0.4em;
                 margin: 0;
             }
+
+            /* 手机端：兼容模式调整 */
+            .char-img {
+                width: 20px;
+                height: 20px;
+            }
         }
 
         /* 平板设备优化 */
@@ -724,5 +805,17 @@
 
             .close-panel-btn {
                 left: 19%;
+            }
+        }
+
+        /* 竖排模式下的图片调整 */
+        @media (min-width: 769px) {
+            .compatibility-result .char-container {
+                margin: 0.2em 0;
+            }
+            
+            .char-img {
+                width: 1.2em;
+                height: 1.2em;
             }
         }
