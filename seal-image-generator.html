@@ -1,61 +1,172 @@
 <!DOCTYPE html>
 <html lang="zh-Hans">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>篆書圖片生成器</title>
-    <link rel="stylesheet" href="src/css/seal-image-generator.css">
+    <link rel="stylesheet" href="src/css/index.css">
 </head>
+
 <body>
     <!-- 新增：iframes遮罩层 -->
     <div class="iframe-overlay" id="iframeOverlay"></div>
-    
+
     <div class="app-container">
         <!-- 左侧控制面板 -->
         <aside class="control-panel">
             <h3>圖片設置</h3>
-            
+
             <!-- 字体设置 -->
             <div class="font-settings-panel">
                 <h4>字體設置</h4>
-                
-                <div class="font-tabs">
+
+                <!-- 使用与index.html相同的字体选项卡结构 -->
+                <div class="font-tab">
                     <button class="font-tab-btn active" data-tab="cloud">雲端字體</button>
                     <button class="font-tab-btn" data-tab="local">本地字體</button>
                     <button class="font-tab-btn" data-tab="system">系統字體</button>
+                    <button class="font-tab-btn" data-tab="compatibility">兼容模式</button>
                 </div>
 
                 <!-- 雲端字體選項卡 -->
                 <div id="cloud-tab" class="font-tab-content active">
-                    <div class="font-option" data-font="Huiwen" data-url="https://raw.githubusercontent.com/dynnbw/Chinese-to-Classical-Chinese-Regular-Script/refs/heads/main/fonts/%E6%B1%87%E6%96%87%E4%BB%BF%E5%AE%8Bv1.001.ttf">
+                    <p>選擇一個雲端字體：</p>
+
+                    <div class="font-option" data-font="Huiwen"
+                        data-url="https://raw.githubusercontent.com/dynnbw/Chinese-to-Classical-Chinese-Regular-Script/refs/heads/main/fonts/%E6%B1%87%E6%96%87%E4%BB%BF%E5%AE%8Bv1.001.ttf">
                         <div class="font-name">汇文仿宋</div>
-                        <div class="font-description">支持大量漢字，包括部分擴展區字符</div>
+                        <div class="font-description">支持大量漢字，包括部分擴展區字符，適合古籍顯示</div>
+                        <div class="font-preview" style="font-family: 'Huiwen', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
                     </div>
 
-                    <div class="font-option" data-font="noto-serif" data-url="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap">
-                        <div class="font-name">思源宋體</div>
-                        <div class="font-description">支持簡繁中文</div>
+                    <div class="font-option" data-font="noto-serif"
+                        data-url="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap">
+                        <div class="font-name">思源宋體 (Noto Serif SC)</div>
+                        <div class="font-description">Google開源字體，支持簡體和繁體中文</div>
+                        <div class="font-preview" style="font-family: 'Noto Serif SC', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸
+                        </div>
+                    </div>
+
+                    <div class="font-option" data-font="MiSans"
+                        data-url="https://raw.githubusercontent.com/dynnbw/Chinese-to-Classical-Chinese-Regular-Script/refs/heads/main/fonts/MiSans%20L3.ttf">
+                        <div class="font-name">MiSans_L3</div>
+                        <div class="font-description">支持大量生僻字，注:本字体版权归属小米科技有限责任公司</div>
+                        <div class="font-preview" style="font-family: 'MiSans', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
+                    </div>
+
+                    <div class="font-option" data-font="custom-url">
+                        <div class="font-name">自定義字體URL</div>
+                        <div class="font-description">輸入自定義字體的URL地址</div>
+                        <input type="text" id="customFontUrl" class="url-input"
+                            placeholder="輸入字體文件URL (支持 .woff, .woff2, .ttf, .otf)">
+                        <div class="font-preview" id="customFontPreview">預覽文字</div>
                     </div>
                 </div>
 
                 <!-- 本地字體選項卡 -->
                 <div id="local-tab" class="font-tab-content">
+                    <p>上傳本地字體文件：</p>
+
                     <div class="file-input-container">
                         <label class="file-input-label">
-                            選擇本地字體文件
-                            <input type="file" id="localFontFile" class="file-input" accept=".ttf,.otf,.woff,.woff2,.eot">
+                            選擇字體文件
+                            <input type="file" id="localFontFile" class="file-input"
+                                accept=".ttf,.otf,.woff,.woff2,.eot">
                         </label>
-                        <div id="selectedFileName" class="selected-file">未選擇文件</div>
+                        <div id="selectedFileName" style="margin-top: 0.5em; font-size: 0.9em; color: #7a6c55;"></div>
+                    </div>
+
+                    <div class="font-option">
+                        <div class="font-name">上傳說明</div>
+                        <div class="font-description">
+                            <p>支持的字體格式：TTF, OTF, WOFF, WOFF2, EOT</p>
+                            <p>建議使用支持擴展漢字的字體</p>
+                            <p>字體文件僅在當前瀏覽器會話中加載</p>
+                            <p style="color: #d9534f; font-weight: bold;">注意：使用後請及時清理緩存釋放內存</p>
+                        </div>
+                    </div>
+
+                    <div class="font-test-area">
+                        <div class="font-test-text" id="localFontPreview">上傳後在此預覽字體效果</div>
                     </div>
                 </div>
 
                 <!-- 系統字體選項卡 -->
                 <div id="system-tab" class="font-tab-content">
+                    <p>選擇系統字體：</p>
+
                     <div class="font-option" data-font="system-default">
                         <div class="font-name">系統默認</div>
+                        <div class="font-description">使用瀏覽器默認字體設置</div>
+                        <div class="font-preview">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
                     </div>
+
                     <div class="font-option" data-font="system-serif">
-                        <div class="font-name">襯線字體</div>
+                        <div class="font-name">襯線字體 (Serif)</div>
+                        <div class="font-description">傳統印刷風格，適合古籍顯示</div>
+                        <div class="font-preview" style="font-family: serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
+                    </div>
+
+                    <div class="font-option" data-font="system-sans">
+                        <div class="font-name">無襯線字體 (Sans-serif)</div>
+                        <div class="font-description">現代簡潔風格</div>
+                        <div class="font-preview" style="font-family: sans-serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
+                    </div>
+                </div>
+
+                <!-- 兼容模式选项卡 -->
+                <div id="compatibility-tab" class="font-tab-content">
+                    <p><strong>字符圖片顯示模式</strong></p>
+                    <p>啟用此模式後，所有字符將通過圖片顯示，確保最大兼容性。</p>
+
+                    <div class="font-option" data-font="svgfonts-compatibility">
+                        <div class="font-name">GlyphWiki SVG字庫</div>
+                        <div class="font-description">
+                            <p>使用GlyphWiki開源SVG字庫，支持超過15萬漢字</p>
+                            <p>圖片來源: <a href="https://zhs.glyphwiki.org/" target="_blank">GlyphWiki</a></p>
+                            <p>版权<a href="https://zhs.glyphwiki.org/wiki/GlyphWiki:%e8%91%97%e4%bd%9c%e6%9d%83%e4%b8%8e%e8%ae%b8%e5%8f%af%e5%8d%8f%e8%ae%ae"
+                                    target="_blank">声明</a></p>
+                            <p>部分瀏覽器請在安裝CORS Unblock插件使用</p>
+                        </div>
+                        <div class="font-preview" id="svgfontsPreview">
+                            <div class="character-preview" style="display: flex; flex-wrap: wrap; gap: 5px;">
+                                <!-- 这里将显示字符预览 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="font-option" data-font="custom-compatibility">
+                        <div class="font-name">自定義圖片字庫</div>
+                        <div class="font-description">使用自定義的圖片字庫URL</div>
+                        <input type="text" id="customImgUrl" class="url-input"
+                            placeholder="輸入圖片URL模板，使用{unicode}作為碼點佔位符">
+                        <div class="font-description" style="margin-top: 0.5em;">
+                            示例: https://example.com/fonts/{unicode}.png
+                        </div>
+                    </div>
+
+                    <div class="compatibility-settings">
+                        <h4>圖片顯示設置</h4>
+                        <label style="font-size: 0.9em; display: block; margin: 0.3em 0;">
+                            <input type="checkbox" id="imgCache" checked> 緩存圖片
+                        </label>
+                        <label style="font-size: 0.9em; display: block; margin: 0.3em 0;">
+                            <input type="checkbox" id="imgLazyLoad" checked> 延遲加載
+                        </label>
+                        <label style="font-size: 0.9em; display: block; margin: 0.3em 0;">
+                            圖片尺寸:
+                            <input type="range" id="imgSize" min="16" max="100" value="20" style="width: 60%;">
+                            <span id="imgSizeValue">24px</span>
+                        </label>
+                        <label style="font-size: 0.9em; display: block; margin: 0.3em 0;">
+                            <input type="checkbox" id="showCharInAlt" checked> 在alt屬性顯示原字符
+                        </label>
+                        <label style="font-size: 0.9em; display: block; margin: 0.3em 0;">
+                            最大緩存數:
+                            <input type="number" id="imgCacheMaxSize" min="10" max="25565" value="65535"
+                                style="width: 50px;">
+                        </label>
                     </div>
                 </div>
 
@@ -65,7 +176,7 @@
             <!-- 布局设置 -->
             <div class="layout-settings">
                 <h4>佈局設置</h4>
-                
+
                 <div class="option-group">
                     <div class="option-row">
                         <label class="checkbox-label">
@@ -80,17 +191,17 @@
                         </label>
                     </div>
                 </div>
-                
+
                 <div class="option-row">
                     <span>字體大小:</span>
                     <input type="number" id="fontSize" class="option-input" value="36" min="12" max="72">
                 </div>
-                
+
                 <div class="option-row">
                     <span>行間距:</span>
                     <input type="number" id="lineHeight" class="option-input" value="1.8" step="0.1" min="1" max="3">
                 </div>
-                
+
                 <div class="option-row">
                     <span>頁邊距:</span>
                     <input type="number" id="marginSize" class="option-input" value="40" min="10" max="100">
@@ -100,31 +211,31 @@
             <!-- 样式设置 -->
             <div class="style-settings">
                 <h4>樣式設置</h4>
-                
+
                 <div class="option-row">
                     <label class="checkbox-label">
                         <input type="checkbox" id="showGrid" checked>
                         顯示古籍網格
                     </label>
                 </div>
-                
+
                 <div class="option-row">
                     <label class="checkbox-label">
                         <input type="checkbox" id="paperTexture">
                         紙張紋理效果
                     </label>
                 </div>
-                
+
                 <div class="option-row">
                     <span>背景顏色:</span>
                     <input type="color" id="bgColor" value="#fefaf0">
                 </div>
-                
+
                 <div class="option-row">
                     <span>文字顏色:</span>
                     <input type="color" id="textColor" value="#3c2f23">
                 </div>
-                
+
                 <div class="option-row">
                     <span>篆書顏色:</span>
                     <input type="color" id="sealColor" value="#8B4513">
@@ -150,8 +261,9 @@
             <!-- 文字输入区域 -->
             <section class="section input-area">
                 <h2>文字輸入</h2>
-                <textarea class="vertical-textarea" id="textInput" placeholder="請在此處輸入要生成圖片的中文字符...">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</textarea>
-                
+                <textarea class="vertical-textarea" id="textInput"
+                    placeholder="請在此處輸入要生成圖片的中文字符...">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</textarea>
+
                 <div class="button-group">
                     <button class="vertical-button" id="clearBtn">清空</button>
                     <button class="vertical-button" id="sampleBtn">示例</button>
@@ -188,7 +300,11 @@
             <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.06 0" />
         </filter>
     </svg>
-    
+
+    <!-- 引入所需的JavaScript文件 -->
+    <script src="src/js/CtoChin.js"></script>
+    <script src="src/js/font-manager.js"></script>
     <script src="src/js/seal-image-generator.js"></script>
 </body>
+
 </html>

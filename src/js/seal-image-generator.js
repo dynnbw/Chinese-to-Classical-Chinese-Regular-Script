@@ -1,23 +1,16 @@
-// 完全独立的篆书图片生成器（更新版，适配新的HTML结构）
-// 完全独立的篆书图片生成器（更新版，适配新的HTML结构）
+// ========== 篆书图片生成器 ==========
+
 (function() {
     'use strict';
     
-    // 状态管理
+    // ========== 状态管理 ==========
     const AppState = {
         currentText: '天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸',
-        currentFont: {
-            name: '系統默認',
-            family: '"Microsoft YaHei", "SimSun", serif',
-            type: 'system',
-            id: 'system-default'
-        },
         generatedImageData: null,
-        fontCache: new Map(),
         isGenerating: false
     };
     
-    // DOM元素 - 更新为新的HTML结构
+    // ========== DOM元素 ==========
     const elements = {
         // 文本输入
         textInput: document.getElementById('textInput'),
@@ -60,6 +53,8 @@
         statusText: document.getElementById('statusText')
     };
     
+    // ========== 工具函数 ==========
+    
     // 检测是否为移动设备
     function isMobileDevice() {
         return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
@@ -72,7 +67,7 @@
         
         try {
             const code = char.codePointAt(0);
-            // 扩展汉字区范围（包括但不限于）
+            // 扩展汉字区范围
             return (code >= 0x20000 && code <= 0x2A6DF) ||  // 扩展B区
                    (code >= 0x2A700 && code <= 0x2B73F) ||  // 扩展C区
                    (code >= 0x2B740 && code <= 0x2B81F) ||  // 扩展D区
@@ -108,7 +103,6 @@
             elements.statusText.textContent = message;
         }
         
-        // 设置状态指示器颜色
         if (elements.statusIndicator) {
             elements.statusIndicator.className = 'status-indicator';
             if (type === 'success') {
@@ -130,6 +124,8 @@
         }
         AppState.isGenerating = show;
     }
+    
+    // ========== 字体管理 (使用FontManager) ==========
     
     // 初始化字体选项卡
     function initFontTabs() {
@@ -177,6 +173,7 @@
                     if (elements.selectedFileName) {
                         elements.selectedFileName.textContent = `已選擇: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
                     }
+                    // 预览本地字体
                     previewLocalFont(file);
                 } else {
                     if (elements.selectedFileName) {
@@ -189,22 +186,51 @@
     
     // 预览本地字体
     function previewLocalFont(file) {
-        // 检查文件格式
+        // 使用FontManager中的预览逻辑
         const validExtensions = ['.ttf', '.otf', '.woff', '.woff2', '.eot'];
+        const validMimeTypes = [
+            'font/ttf', 'font/otf', 'font/woff', 'font/woff2',
+            'application/vnd.ms-fontobject', 'application/x-font-ttf',
+            'application/x-font-otf', 'application/x-font-woff'
+        ];
+
         const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-        
-        if (!validExtensions.includes(fileExtension)) {
-            updateStatus('不支持的字體文件格式', 'error');
+        const fileType = file.type.toLowerCase();
+
+        // 检查文件扩展名和MIME类型
+        const isValidExtension = validExtensions.includes(fileExtension);
+        const isValidMimeType = validMimeTypes.includes(fileType) ||
+            validMimeTypes.some(type => fileType.includes(type.replace('font/', '')));
+
+        if (!isValidExtension && !isValidMimeType) {
+            updateStatus('不支持的字體文件格式，請使用TTF、OTF、WOFF、WOFF2或EOT格式', 'error');
             return;
         }
-        
+
         const fontName = 'LocalPreviewFont-' + Date.now();
-        const fontFace = new FontFace(fontName, `url(${URL.createObjectURL(file)})`);
-        
+        const objectURL = URL.createObjectURL(file);
+        const fontFace = new FontFace(fontName, `url(${objectURL})`);
+
         fontFace.load().then(loadedFont => {
             document.fonts.add(loadedFont);
             updateStatus('本地字體預覽加載成功', 'success');
+            
+            // 释放预览字体资源（延迟释放）
+            setTimeout(() => {
+                try {
+                    URL.revokeObjectURL(objectURL);
+                    document.fonts.delete(loadedFont);
+                } catch (e) {
+                    console.warn('清理预览字体资源失败:', e);
+                }
+            }, 5000);
+            
         }).catch(error => {
+            try {
+                URL.revokeObjectURL(objectURL);
+            } catch (e) {
+                // 忽略错误
+            }
             updateStatus(`字體預覽失敗: ${error.message}`, 'error');
         });
     }
@@ -236,7 +262,7 @@
                 applySystemFont(selectedOption);
             }
             
-            updateStatus(`已應用字體: ${AppState.currentFont.name}`, 'success');
+            updateStatus(`已應用字體: ${FontManager.currentFont.name}`, 'success');
             
             // 重新生成图片
             setTimeout(generateImage, 100);
@@ -258,45 +284,8 @@
             throw new Error('字體URL無效');
         }
         
-        // 检查字体是否已缓存
-        if (!AppState.fontCache.has(fontId)) {
-            await loadFontFromUrl(fontId, fontUrl);
-            AppState.fontCache.set(fontId, {
-                name: fontName,
-                family: fontId === 'Huiwen' ? 'Huiwen' : 'Noto Serif SC',
-                url: fontUrl
-            });
-        }
-        
-        const fontData = AppState.fontCache.get(fontId);
-        AppState.currentFont = {
-            name: fontName,
-            family: fontData.family,
-            type: 'cloud',
-            id: fontId,
-            url: fontData.url
-        };
-    }
-    
-    // 从URL加载字体
-    async function loadFontFromUrl(fontName, fontUrl) {
-        updateStatus(`正在加載字體: ${fontName}...`, 'info');
-        
-        if (fontUrl.includes('css2?')) {
-            // Google Fonts等CSS字体
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = fontUrl;
-            document.head.appendChild(link);
-            
-            // 等待字体加载
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        } else {
-            // 直接字体文件
-            const fontFace = new FontFace(fontName, `url("${fontUrl}")`);
-            const loadedFont = await fontFace.load();
-            document.fonts.add(loadedFont);
-        }
+        // 使用FontManager加载云端字体
+        await FontManager.loadCloudFont(fontId, fontUrl, fontName, updateStatus);
     }
     
     // 应用本地字体
@@ -308,63 +297,19 @@
         const file = elements.localFontFile.files[0];
         const fontName = 'LocalFont-' + file.name.replace(/\.[^/.]+$/, "");
         
-        // 检查是否已加载
-        if (!AppState.fontCache.has(fontName)) {
-            updateStatus('正在加載本地字體...', 'info');
-            
-            const arrayBuffer = await readFileAsArrayBuffer(file);
-            const fontFace = new FontFace(fontName, arrayBuffer);
-            const loadedFont = await fontFace.load();
-            document.fonts.add(loadedFont);
-            
-            AppState.fontCache.set(fontName, {
-                name: fontName,
-                family: fontName,
-                file: file
-            });
-        }
-        
-        AppState.currentFont = {
-            name: `本地字體: ${file.name}`,
-            family: fontName,
-            type: 'local',
-            id: 'local-' + Date.now(),
-            file: file
-        };
-    }
-    
-    // 读取文件为ArrayBuffer
-    function readFileAsArrayBuffer(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsArrayBuffer(file);
-        });
+        // 使用FontManager加载本地字体
+        await FontManager.loadLocalFont(file, fontName, updateStatus);
     }
     
     // 应用系统字体
     function applySystemFont(option) {
         const fontId = option.dataset.font;
-        let fontFamily, fontName;
         
-        switch (fontId) {
-            case 'system-serif':
-                fontFamily = 'serif';
-                fontName = '襯線字體';
-                break;
-            default:
-                fontFamily = '"Microsoft YaHei", "SimSun", serif';
-                fontName = '系統默認';
-        }
-        
-        AppState.currentFont = {
-            name: fontName,
-            family: fontFamily,
-            type: 'system',
-            id: fontId
-        };
+        // 使用FontManager应用系统字体
+        FontManager.applySystemFont(fontId, updateStatus);
     }
+    
+    // ========== 图片生成功能 ==========
     
     // 生成图片
     async function generateImage() {
@@ -412,8 +357,11 @@
                 }
             }
             
-            // 使用安全的字体族，确保支持生僻字
-            const fontFamily = `${AppState.currentFont.family}, "Huiwen", "Microsoft YaHei", "SimSun", serif`;
+            // 使用FontManager获取当前字体
+            const fontFamily = FontManager.currentFont ? 
+                `${FontManager.currentFont.family}, "Microsoft YaHei", "SimSun", serif` :
+                '"Microsoft YaHei", "SimSun", serif';
+            
             const lineHeight = fontSize * lineHeightRatio;
             const isVertical = layout === 'vertical';
             const isMobile = isMobileDevice();
@@ -501,13 +449,12 @@
                         ctx.fillText(char, 0, 0);
                         ctx.restore();
                     } else {
-                        // 电脑端：竖排文字不旋转
+                        // 电脑端：竖排文字旋转90度
                         ctx.save();
                         ctx.translate(x, y);
-                        ctx.rotate(Math.PI / 2); // 旋转90度
+                        ctx.rotate(Math.PI / 2);
                         ctx.fillText(char, 0, 0);
                         ctx.restore();
-                        
                     }
                 }
             } else {
@@ -574,12 +521,8 @@
                             // 手机端：横排文字正常绘制
                             ctx.fillText(char, x, y);
                         } else {
-                            // 电脑端：横排文字需要旋转180度（正立）
-                            ctx.save();
-                            ctx.translate(x, y);
-                            ctx.rotate(Math.PI / 2); // 旋转180度
-                            ctx.fillText(char, 0, 0);
-                            ctx.restore();
+                            // 电脑端：横排文字正常绘制（不旋转）
+                            ctx.fillText(char, x, y);
                         }
                         
                         x += ctx.measureText(char).width;
@@ -669,6 +612,8 @@
         }
     }
     
+    // ========== 其他功能 ==========
+    
     // 从URL参数加载文字
     function loadTextFromUrl() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -754,7 +699,8 @@
         };
     }
     
-    // 初始化事件监听器
+    // ========== 初始化事件监听器 ==========
+    
     function initEventListeners() {
         // 文本输入相关
         if (elements.clearBtn) {
@@ -846,9 +792,15 @@
         }, 300));
     }
     
-    // 初始化应用
+    // ========== 初始化应用 ==========
+    
     function init() {
         console.log('篆書圖片生成器初始化...');
+        
+        // 初始化FontManager
+        if (window.FontManager) {
+            FontManager.init();
+        }
         
         // 检测设备并设置默认布局
         detectDeviceAndSetLayout();
@@ -866,7 +818,8 @@
         updateStatus('圖片生成器就緒', 'success');
     }
     
-    // 当DOM加载完成时初始化
+    // ========== 页面加载时初始化 ==========
+    
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

@@ -6,7 +6,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>古籍篆楷轉換臺</title>
-    <link rel="stylesheet" href="src/css/styles.css"> <!-- 引入 CSS 文件 -->
+    <link rel="stylesheet" href="src/css/index.css"> <!-- 引入 CSS 文件 -->
 </head>
 
 <body>
@@ -55,7 +55,8 @@
                 <span class="tooltiptext">顯示系統調試信息</span>
             </div>
             <div class="tooltip">
-                <button onclick="window.location.href='seal-image-generator.html'" target="_blank" class="vertical-button">圖片生成</button>
+                <button onclick="window.location.href='seal-image-generator.html'" target="_blank"
+                    class="vertical-button">圖片生成</button>
                 <span class="tooltiptext">打開圖片生成工具</span>
             </div>
             <div class="tooltip">
@@ -230,7 +231,7 @@
                 data-url="https://raw.githubusercontent.com/dynnbw/Chinese-to-Classical-Chinese-Regular-Script/refs/heads/main/fonts/MiSans%20L3.ttf">
                 <div class="font-name">MiSans_L3</div>
                 <div class="font-description">支持大量生僻字，注:本字体版权归属小米科技有限责任公司</div>
-                <div class="font-preview" style="font-family: 'MiSans_L3', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
+                <div class="font-preview" style="font-family: 'MiSans', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
             </div>
 
             <div class="font-option" data-font="custom-url">
@@ -296,32 +297,32 @@
         <div id="compatibility-tab" class="font-tab-content">
             <p><strong>字符圖片顯示模式</strong></p>
             <p>啟用此模式後，所有字符將通過圖片顯示，確保最大兼容性。</p>
-            
-            <div class="font-option" data-font="zdic-compatibility">
-                <div class="font-name">漢典SVG字庫</div>
+
+            <div class="font-option" data-font="svgfonts-compatibility">
+                <div class="font-name">GlyphWiki SVG字庫</div>
                 <div class="font-description">
-                    <p>使用漢典網SVG字庫，支持9萬餘漢字</p>
-                    <p>圖片來源: <a href="https://www.zdic.net/" target="_blank">漢典網</a></p>
-                    <p>版权<a href="https://www.zdic.net/aboutus/copyright/" target="_blank">声明</a></p>
-                    <p>請在瀏覽器安裝CORS Unblock插件使用</p>
+                    <p>使用GlyphWiki開源SVG字庫，支持超過15萬漢字</p>
+                    <p>圖片來源: <a href="https://zhs.glyphwiki.org/" target="_blank">GlyphWiki</a></p>
+                    <p>版权<a href="https://zhs.glyphwiki.org/wiki/GlyphWiki:%e8%91%97%e4%bd%9c%e6%9d%83%e4%b8%8e%e8%ae%b8%e5%8f%af%e5%8d%8f%e8%ae%ae"
+                            target="_blank">声明</a></p>
+                    <p>部分瀏覽器請在安裝CORS Unblock插件使用</p>
                 </div>
-                <div class="font-preview" id="zdicPreview">
+                <div class="font-preview" id="svgfontsPreview">
                     <div class="character-preview" style="display: flex; flex-wrap: wrap; gap: 5px;">
                         <!-- 这里将显示字符预览 -->
                     </div>
                 </div>
             </div>
-            
+
             <div class="font-option" data-font="custom-compatibility">
                 <div class="font-name">自定義圖片字庫</div>
                 <div class="font-description">使用自定義的圖片字庫URL</div>
-                <input type="text" id="customImgUrl" class="url-input" 
-                       placeholder="輸入圖片URL模板，使用{unicode}作為碼點佔位符">
+                <input type="text" id="customImgUrl" class="url-input" placeholder="輸入圖片URL模板，使用{unicode}作為碼點佔位符">
                 <div class="font-description" style="margin-top: 0.5em;">
                     示例: https://example.com/fonts/{unicode}.png
                 </div>
             </div>
-            
+
             <div class="compatibility-settings">
                 <h4>圖片顯示設置</h4>
                 <label style="font-size: 0.9em; display: block; margin: 0.3em 0;">
@@ -331,7 +332,7 @@
                     <input type="checkbox" id="imgLazyLoad" checked> 延遲加載
                 </label>
                 <label style="font-size: 0.9em; display: block; margin: 0.3em 0;">
-                    圖片尺寸: 
+                    圖片尺寸:
                     <input type="range" id="imgSize" min="16" max="100" value="20" style="width: 60%;">
                     <span id="imgSizeValue">24px</span>
                 </label>
@@ -339,7 +340,7 @@
                     <input type="checkbox" id="showCharInAlt" checked> 在alt屬性顯示原字符
                 </label>
                 <label style="font-size: 0.9em; display: block; margin: 0.3em 0;">
-                    最大緩存數: 
+                    最大緩存數:
                     <input type="number" id="imgCacheMaxSize" min="10" max="25565" value="65535" style="width: 50px;">
                 </label>
             </div>
@@ -351,7 +352,7 @@
             <p>字體測試區域：</p>
             <div class="font-test-text" id="fontTestText">天地日月山水木金火土 漢書樂龜龍馬鳥魚</div>
             <div class="font-test-text" id="fontTestText2">篆書楷化字示例：𠀘𡍑𡆠𡴑𡴸𣱱𤆄𣎳𨤾𡈽</div>
-            
+
             <p>兼容模式測試：</p>
             <div class="compatibility-test-text" id="compatibilityTestText">
                 <p>啟用兼容模式後，此處將顯示圖片形式的字符。</p>
@@ -361,8 +362,27 @@
     </div>
 
     <script src="src/js/CtoChin.js"></script> <!-- 引入 JavaScript 文件 -->
+    <script src="src/js/font-manager.js"></script> <!-- 引入 JavaScript 文件 -->
     <script src="src/js/index.js"></script> <!-- 引入 JavaScript 文件 -->
+    <script>
+        // 在页面加载时，确保字体管理器能访问到 updateStatus 函数
+        window.addEventListener('DOMContentLoaded', function () {
+            // 确保字体管理器能访问到主应用的状态更新函数
+            if (window.initializeFontSettings) {
+                initializeFontSettings(window.updateStatus);
+            }
 
+            // 初始化事件监听器
+            if (window.initializeEventListeners) {
+                initializeEventListeners();
+            }
+
+            // 初始化应用
+            if (window.initializeApp) {
+                initializeApp();
+            }
+        });
+    </script>
     <!-- 噪声滤镜定义（核心依赖，不可删除） -->
     <svg>
         <filter id="noise-filter-1">
