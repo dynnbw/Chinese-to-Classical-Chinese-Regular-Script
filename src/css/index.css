@@ -760,7 +760,7 @@ h4 {
     height: 24px;
     object-fit: contain;
     vertical-align: middle;
-    border: 1px solid #e0d6c2;
+   /* border: 1px solid #e0d6c2; */
     background-color: white;
     transition: transform 0.2s;
 }
