@@ -30,6 +30,73 @@ const AppState = {
     }
 };
 
+let appInitialized = false;
+let eventListenersInitialized = false;
+
+function getInputTextElement() {
+    return document.getElementById('inputText');
+}
+
+function getOutputTextElement() {
+    return document.getElementById('outputText');
+}
+
+function getConversionPanelElements() {
+    return {
+        panel: document.getElementById('conversionPanel'),
+        overlay: document.getElementById('iframeOverlay'),
+        closeBtn: document.getElementById('closePanelBtn')
+    };
+}
+
+function setConversionPanelVisibility(visible) {
+    const { panel, overlay, closeBtn } = getConversionPanelElements();
+    if (!panel || !overlay || !closeBtn) {
+        return false;
+    }
+
+    panel.style.display = visible ? 'block' : 'none';
+    overlay.style.display = visible ? 'block' : 'none';
+    closeBtn.style.display = visible ? 'flex' : 'none';
+    updateStatus(visible ? '簡繁轉換工具已打開' : '簡繁轉換工具已關閉', 'good');
+    return true;
+}
+
+function getDefaultOutputMarkup(direction = AppState.conversionDirection) {
+    const isToSeal = direction === 'toSeal';
+    const placeholderLabel = isToSeal ? '繁體字' : '篆書楷化字';
+    const samples = isToSeal
+        ? [['天', '𠀘'], ['地', '𡍑'], ['日', '𡆠']]
+        : [['𠀘', '天'], ['𡍑', '地'], ['𡆠', '日']];
+
+    const comparisons = samples.map(([original, converted]) => `
+                <div class="comparison">
+                    <span class="original-char">${original}</span>
+                    <span class="arrow">→</span>
+                    <span class="converted-char ${isToSeal ? 'seal-char' : ''}">${converted}</span>
+                </div>`).join('');
+
+    return `
+                <p>轉換結果將在此處以豎排古籍樣式呈現。</p>${comparisons}
+                <p>請在左側輸入${placeholderLabel}進行轉換。</p>
+            `;
+}
+
+function getLatestPureText() {
+    return AppState.lastConversionResult.pureText || extractPureTextFromOutput();
+}
+
+function escapeHtml(text) {
+    if (text == null) return '';
+
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // 反向映射表（自动生成）
 let ReverseSealMapping = {};
 
@@ -57,26 +124,6 @@ function buildReverseMapping() {
     return ReverseSealMapping;
 }
 
-// ========== 新增：加载反向映射表 ==========
-
-function loadReverseMappings() {
-    try {
-        // 尝试从 localStorage 加载已保存的反向映射
-        const savedReverseMappings = localStorage.getItem(STORAGE_KEYS.REVERSE_MAPPINGS);
-        if (savedReverseMappings) {
-            ReverseSealMapping = JSON.parse(savedReverseMappings);
-            console.log(`从 localStorage 加载了 ${Object.keys(ReverseSealMapping).length} 条反向映射`);
-            return true;
-        }
-    } catch (error) {
-        console.error('加载反向映射失败:', error);
-    }
-
-    // 如果本地没有保存，则重新构建
-    buildReverseMapping();
-    return false;
-}
-
 // ========== 修改：核心转换函数，支持双向转换 ==========
 
 /**
@@ -87,7 +134,8 @@ function convertText(text, direction = AppState.conversionDirection) {
         return {
             result: '',
             pureText: '',
-            stats: { converted: 0, total: 0 }
+            stats: { converted: 0, total: 0 },
+            charDetails: []
         };
     }
 
@@ -96,6 +144,7 @@ function convertText(text, direction = AppState.conversionDirection) {
     let pureText = '';
     let converted = 0;
     let total = 0;
+    const charDetails = [];
 
     // 根据转换方向选择映射表
     const mapping = direction === 'toSeal' ? SealMapping : ReverseSealMapping;
@@ -115,12 +164,28 @@ function convertText(text, direction = AppState.conversionDirection) {
         }
 
         if (mapping[char]) {
-            result += mapping[char];
-            pureText += mapping[char];
+            const mappedText = mapping[char];
+            const isSealTarget = direction === 'toSeal' && mappedText !== char;
+
+            result += mappedText;
+            pureText += mappedText;
             converted++;
+
+            getSafeCharacters(mappedText).forEach(outputChar => {
+                charDetails.push({
+                    char: outputChar,
+                    isSealTarget
+                });
+            });
         } else {
             result += char;
             pureText += char;
+            getSafeCharacters(char).forEach(outputChar => {
+                charDetails.push({
+                    char: outputChar,
+                    isSealTarget: false
+                });
+            });
         }
     }
 
@@ -133,7 +198,8 @@ function convertText(text, direction = AppState.conversionDirection) {
     return {
         result: result,
         pureText: pureText,
-        stats: { converted, total }
+        stats: { converted, total },
+        charDetails
     };
 }
 
@@ -154,7 +220,8 @@ function toggleConversionDirection() {
     updateDirectionDisplay();
 
     // 如果有输入文本，自动重新转换
-    const inputText = document.getElementById('inputText').value;
+    const inputElement = getInputTextElement();
+    const inputText = inputElement ? inputElement.value : '';
     if (inputText && inputText.trim()) {
         performConversion();
     }
@@ -252,6 +319,28 @@ function safeString(str) {
     return chars.join('');
 }
 
+function getSafeCharacters(str) {
+    if (!str) return [];
+
+    const chars = [];
+    for (let i = 0; i < str.length; i++) {
+        const code = str.charCodeAt(i);
+
+        if (code >= 0xD800 && code <= 0xDBFF && i + 1 < str.length) {
+            const nextCode = str.charCodeAt(i + 1);
+            if (nextCode >= 0xDC00 && nextCode <= 0xDFFF) {
+                chars.push(str.substring(i, i + 2));
+                i++;
+                continue;
+            }
+        }
+
+        chars.push(str.charAt(i));
+    }
+
+    return chars;
+}
+
 /**
  * 獲取字符的Unicode碼點
  */
@@ -320,7 +409,7 @@ function updateStatsDisplay() {
 /**
  * 格式化轉換結果顯示
  */
-function formatConversionResult(original, converted, stats) {
+function formatConversionResult(original, converted, stats, charDetails = []) {
     if (!original || !converted) {
         return {
             html: '轉換結果將在此處以豎排古籍樣式呈現。',
@@ -340,13 +429,18 @@ function formatConversionResult(original, converted, stats) {
     console.log('当前字体:', FontManager ? FontManager.currentFont : 'FontManager not loaded');
 
     if (useCompatibilityMode) {
+        const safeText = escapeHtml(converted);
         let html = `<div class="compatibility-result">`;
+        html += `<div class="compatibility-image-layer">`;
         html += CompatibilityMode.formatTextAsImages(converted, { 
-            size: CompatibilityMode.settings.imgSize 
+            size: CompatibilityMode.settings.imgSize,
+            charDetails
         });
+        html += `</div>`;
+        html += `<div class="compatibility-select-layer">${safeText}</div>`;
         
         // 在兼容模式下，添加隐藏的纯文本版本
-        html += `<div style="display: none;" id="compatibility-pure-text">${converted}</div>`;
+        html += `<div style="display: none;" id="compatibility-pure-text">${safeText}</div>`;
         html += `</div>`;
         
         return {
@@ -362,28 +456,14 @@ function formatConversionResult(original, converted, stats) {
         html += `<strong>${fromLabel} → ${toLabel} 轉換完成:</strong> ${stats.converted}/${stats.total} 個字符被轉換<br>`;
         html += `<strong>轉換結果 (含碼點):</strong><br>`;
 
-        const safeConverted = safeString(converted);
-        const chars = [];
+        const detailedChars = charDetails.length > 0
+            ? charDetails
+            : getSafeCharacters(converted).map(char => ({ char, isSealTarget: direction === 'toSeal' }));
 
-        for (let i = 0; i < safeConverted.length; i++) {
-            const code = safeConverted.charCodeAt(i);
-
-            if (code >= 0xD800 && code <= 0xDBFF && i + 1 < safeConverted.length) {
-                const nextCode = safeConverted.charCodeAt(i + 1);
-                if (nextCode >= 0xDC00 && nextCode <= 0xDFFF) {
-                    chars.push(safeConverted.substring(i, i + 2));
-                    i++;
-                    continue;
-                }
-            }
-
-            chars.push(safeConverted.charAt(i));
-        }
-
-        chars.forEach(char => {
+        detailedChars.forEach(({ char, isSealTarget }) => {
             const codePoint = getCharCodePoint(char);
             html += `<div class="comparison">
-                <span class="converted-char ${direction === 'toSeal' ? 'seal-char' : ''}">${char}</span>
+                <span class="converted-char ${isSealTarget ? 'seal-char' : ''}">${char}</span>
                 <span style="font-size: 0.7em; color: #666;">${codePoint}</span>
             </div>`;
         });
@@ -394,27 +474,12 @@ function formatConversionResult(original, converted, stats) {
         };
     } else {
         // 普通模式
-        const safeConverted = safeString(converted);
-        const chars = [];
+        const detailedChars = charDetails.length > 0
+            ? charDetails
+            : getSafeCharacters(converted).map(char => ({ char, isSealTarget: direction === 'toSeal' }));
 
-        for (let i = 0; i < safeConverted.length; i++) {
-            const code = safeConverted.charCodeAt(i);
-
-            if (code >= 0xD800 && code <= 0xDBFF && i + 1 < safeConverted.length) {
-                const nextCode = safeConverted.charCodeAt(i + 1);
-                if (nextCode >= 0xDC00 && nextCode <= 0xDFFF) {
-                    chars.push(safeConverted.substring(i, i + 2));
-                    i++;
-                    continue;
-                }
-            }
-
-            chars.push(safeConverted.charAt(i));
-        }
-
-        // 为每个字符创建span，添加pure-char类以便提取
-        chars.forEach(char => {
-            html += `<span class="pure-char ${direction === 'toSeal' ? 'seal-char' : ''}">${char}</span>`;
+        detailedChars.forEach(({ char, isSealTarget }) => {
+            html += `<span class="pure-char ${isSealTarget ? 'seal-char' : ''}">${char}</span>`;
         });
         
         return {
@@ -488,6 +553,14 @@ function exportData(data, filename, type = 'text/plain') {
     URL.revokeObjectURL(url);
 }
 
+function exportMappingJson() {
+    const mappingData = JSON.stringify(SealMapping, null, 2);
+    const dateSuffix = new Date().toISOString().slice(0, 10);
+
+    exportData(mappingData, `轉換映射表_${dateSuffix}.json`, 'application/json');
+    updateStatus(`映射表已導出，共 ${Object.keys(SealMapping).length} 條映射`, 'good');
+}
+
 function viewCurrentMapping() {
     const direction = AppState.conversionDirection;
     const mappingToShow = direction === 'toSeal' ? SealMapping : ReverseSealMapping;
@@ -516,14 +589,14 @@ function viewCurrentMapping() {
  * 强制重新转换当前文本
  */
 function forceReconvert() {
-    const inputTextEl = document.getElementById('inputText');
+    const inputTextEl = getInputTextElement();
     if (!inputTextEl) return;
     
     const inputText = inputTextEl.value;
     if (!inputText.trim()) return;
     
     // 清除输出区域
-    const output = document.getElementById('outputText');
+    const output = getOutputTextElement();
     if (output) {
         output.innerHTML = '正在重新轉換...';
     }
@@ -535,7 +608,7 @@ function forceReconvert() {
 }
 
 function performConversion() {
-    const inputTextEl = document.getElementById('inputText');
+    const inputTextEl = getInputTextElement();
     if (!inputTextEl) return;
 
     const inputText = inputTextEl.value;
@@ -545,10 +618,10 @@ function performConversion() {
         return;
     }
 
-    const { result, pureText, stats } = convertText(inputText);
-    const output = document.getElementById('outputText');
+    const { result, pureText, stats, charDetails } = convertText(inputText);
+    const output = getOutputTextElement();
     if (output) {
-        const formattedResult = formatConversionResult(inputText, result, stats);
+        const formattedResult = formatConversionResult(inputText, result, stats, charDetails);
         output.innerHTML = formattedResult.html;
         
         // 存储最后一次转换的结果
@@ -572,7 +645,7 @@ function performConversion() {
  * 從輸出區域提取純文本
  */
 function extractPureTextFromOutput() {
-    const outputTextEl = document.getElementById('outputText');
+    const outputTextEl = getOutputTextElement();
     if (!outputTextEl) return '';
     
     // 如果存在隐藏的纯文本元素，直接使用
@@ -611,7 +684,7 @@ function testFontDisplay() {
         }
     }
     
-    const output = document.getElementById('outputText');
+    const output = getOutputTextElement();
     if (!output) return;
 
     const directionLabel = AppState.conversionDirection === 'toSeal' ? '繁體→篆書' : '篆書→繁體';
@@ -642,8 +715,8 @@ function testFontDisplay() {
 }
 
 function showDebugInfo() {
-    const inputTextEl = document.getElementById('inputText');
-    const output = document.getElementById('outputText');
+    const inputTextEl = getInputTextElement();
+    const output = getOutputTextElement();
     if (!inputTextEl || !output) return;
 
     const inputText = inputTextEl.value || '無輸入';
@@ -776,30 +849,16 @@ function loadConversionDirection() {
 // ========== 新增：图片生成器功能 ==========
 
 /**
- * 提取纯文字从输出区域
- */
-function extractPureTextForImageGenerator() {
-    // 优先使用存储的纯文本结果
-    if (AppState.lastConversionResult.pureText) {
-        return AppState.lastConversionResult.pureText;
-    }
-    
-    // 否则从输出区域提取
-    return extractPureTextFromOutput();
-}
-
-/**
  * 打开图片生成器并传递纯文字
  */
 function openImageGenerator() {
-    const inputTextEl = document.getElementById('inputText');
+    const inputTextEl = getInputTextElement();
     if (!inputTextEl || !inputTextEl.value.trim()) {
         updateStatus('請先輸入要轉換的文字', 'warning');
         return;
     }
 
-    // 优先使用存储的纯文本结果
-    let resultText = extractPureTextForImageGenerator();
+    let resultText = getLatestPureText();
 
     // 如果提取失败或太短，执行转换
     if (!resultText || resultText.length < 2) {
@@ -831,6 +890,12 @@ function openImageGenerator() {
 // ========== 初始化與事件綁定 ==========
 
 function initializeEventListeners() {
+    if (eventListenersInitialized) {
+        return;
+    }
+
+    eventListenersInitialized = true;
+
     // 转换方向切换按钮
     const toggleDirectionBtn = document.getElementById('toggleDirectionBtn');
     if (toggleDirectionBtn) {
@@ -850,7 +915,7 @@ function initializeEventListeners() {
 
     if (convertBtn) convertBtn.addEventListener('click', performConversion);
     if (sampleBtn) sampleBtn.addEventListener('click', () => {
-        const inputText = document.getElementById('inputText');
+        const inputText = getInputTextElement();
         if (inputText) {
             // 根据当前方向加载不同的示例
             if (AppState.conversionDirection === 'toSeal') {
@@ -863,30 +928,12 @@ function initializeEventListeners() {
         }
     });
     if (clearBtn) clearBtn.addEventListener('click', () => {
-        const inputText = document.getElementById('inputText');
-        const outputText = document.getElementById('outputText');
+        const inputText = getInputTextElement();
+        const outputText = getOutputTextElement();
 
         if (inputText) inputText.value = '';
         if (outputText) {
-            outputText.innerHTML = `
-                <p>轉換結果將在此處以豎排古籍樣式呈現。</p>
-                <div class="comparison">
-                    <span class="original-char">${AppState.conversionDirection === 'toSeal' ? '天' : '𠀘'}</span>
-                    <span class="arrow">→</span>
-                    <span class="converted-char ${AppState.conversionDirection === 'toSeal' ? 'seal-char' : ''}">${AppState.conversionDirection === 'toSeal' ? '𠀘' : '天'}</span>
-                </div>
-                <div class="comparison">
-                    <span class="original-char">${AppState.conversionDirection === 'toSeal' ? '地' : '𡍑'}</span>
-                    <span class="arrow">→</span>
-                    <span class="converted-char ${AppState.conversionDirection === 'toSeal' ? 'seal-char' : ''}">${AppState.conversionDirection === 'toSeal' ? '𡍑' : '地'}</span>
-                </div>
-                <div class="comparison">
-                    <span class="original-char">${AppState.conversionDirection === 'toSeal' ? '日' : '𡆠'}</span>
-                    <span class="arrow">→</span>
-                    <span class="converted-char ${AppState.conversionDirection === 'toSeal' ? 'seal-char' : ''}">${AppState.conversionDirection === 'toSeal' ? '𡆠' : '日'}</span>
-                </div>
-                <p>請在左側輸入${AppState.conversionDirection === 'toSeal' ? '繁體字' : '篆書楷化字'}進行轉換。</p>
-            `;
+            outputText.innerHTML = getDefaultOutputMarkup();
         }
         
         // 清除存储的转换结果
@@ -909,8 +956,7 @@ function initializeEventListeners() {
     const debugBtn = document.getElementById('debugBtn');
 
     if (copyBtn) copyBtn.addEventListener('click', () => {
-        // 优先使用存储的纯文本结果
-        const textToCopy = AppState.lastConversionResult.pureText || extractPureTextFromOutput();
+        const textToCopy = getLatestPureText();
         
         if (textToCopy && textToCopy.trim()) {
             copyToClipboard(textToCopy);
@@ -920,8 +966,7 @@ function initializeEventListeners() {
     });
     
     if (saveBtn) saveBtn.addEventListener('click', () => {
-        // 优先使用存储的纯文本结果
-        const textToSave = AppState.lastConversionResult.pureText || extractPureTextFromOutput();
+        const textToSave = getLatestPureText();
         
         if (textToSave && textToSave.trim()) {
             const direction = AppState.conversionDirection === 'toSeal' ? '繁轉篆' : '篆轉繁';
@@ -942,17 +987,13 @@ function initializeEventListeners() {
     const fontOverlay = document.getElementById('fontOverlay');
 
     if (togglePanelBtn) togglePanelBtn.addEventListener('click', () => {
-        const panel = document.getElementById('conversionPanel');
-        const overlay = document.getElementById('iframeOverlay');
-        const closeBtn = document.getElementById('closePanelBtn');
-
-        if (panel && overlay && closeBtn) {
-            const isHidden = panel.style.display === 'none';
-            panel.style.display = isHidden ? 'block' : 'none';
-            overlay.style.display = isHidden ? 'block' : 'none';
-            closeBtn.style.display = isHidden ? 'flex' : 'none';
-            updateStatus(isHidden ? '簡繁轉換工具已打開' : '簡繁轉換工具已關閉', 'good');
+        const { panel } = getConversionPanelElements();
+        if (!panel) {
+            return;
         }
+
+        const isHidden = panel.style.display === 'none';
+        setConversionPanelVisibility(isHidden);
     });
     if (fontSettingsBtn) fontSettingsBtn.addEventListener('click', () => {
         if (window.openFontSettings) {
@@ -974,6 +1015,7 @@ function initializeEventListeners() {
 
     // 数据管理按钮
     const importBtn = document.getElementById('importBtn');
+    const exportMappingBtn = document.getElementById('exportMappingBtn');
     const exportBtn = document.getElementById('exportBtn');
     const viewMappingBtn = document.getElementById('viewMappingBtn');
 
@@ -981,8 +1023,9 @@ function initializeEventListeners() {
         const url = prompt('請輸入映射數據的URL（JSON格式）:', 'https://raw.githubusercontent.com/dynnbw/Chinese-to-Classical-Chinese-Regular-Script/refs/heads/main/%E8%BD%AC%E6%8D%A2.json');
         if (url) importMappingData(url);
     });
+    if (exportMappingBtn) exportMappingBtn.addEventListener('click', exportMappingJson);
     if (exportBtn) exportBtn.addEventListener('click', () => {
-        const inputText = document.getElementById('inputText');
+        const inputText = getInputTextElement();
         if (inputText && inputText.value) {
             const { pureText } = convertText(inputText.value);
             const direction = AppState.conversionDirection === 'toSeal' ? '繁轉篆' : '篆轉繁';
@@ -996,31 +1039,13 @@ function initializeEventListeners() {
 
     // 关闭iframe控制
     const closePanelBtn = document.getElementById('closePanelBtn');
-    const iframeOverlay = document.getElementById('iframeOverlay');
+    const { overlay: iframeOverlay } = getConversionPanelElements();
 
     if (closePanelBtn) closePanelBtn.addEventListener('click', () => {
-        const panel = document.getElementById('conversionPanel');
-        const overlay = document.getElementById('iframeOverlay');
-        const closeBtn = document.getElementById('closePanelBtn');
-
-        if (panel && overlay && closeBtn) {
-            panel.style.display = 'none';
-            overlay.style.display = 'none';
-            closeBtn.style.display = 'none';
-            updateStatus('簡繁轉換工具已關閉', 'good');
-        }
+        setConversionPanelVisibility(false);
     });
     if (iframeOverlay) iframeOverlay.addEventListener('click', () => {
-        const panel = document.getElementById('conversionPanel');
-        const overlay = document.getElementById('iframeOverlay');
-        const closeBtn = document.getElementById('closePanelBtn');
-
-        if (panel && overlay && closeBtn) {
-            panel.style.display = 'none';
-            overlay.style.display = 'none';
-            closeBtn.style.display = 'none';
-            updateStatus('簡繁轉換工具已關閉', 'good');
-        }
+        setConversionPanelVisibility(false);
     });
 
     // 设置选项
@@ -1033,7 +1058,7 @@ function initializeEventListeners() {
         saveAppSettings();
         updateStatus(this.checked ? '已啟用實時轉換' : '已禁用實時轉換', 'good');
         if (this.checked) {
-            const inputText = document.getElementById('inputText');
+            const inputText = getInputTextElement();
             if (inputText && inputText.value.trim()) {
                 performConversion();
             }
@@ -1043,7 +1068,7 @@ function initializeEventListeners() {
         AppState.settings.showCharCodes = this.checked;
         saveAppSettings();
         updateStatus(this.checked ? '已啟用碼點顯示' : '已禁用碼點顯示', 'good');
-        const inputText = document.getElementById('inputText');
+        const inputText = getInputTextElement();
         if (inputText && inputText.value) {
             performConversion();
         }
@@ -1055,7 +1080,7 @@ function initializeEventListeners() {
     });
 
     // 实时转换 - 使用防抖优化
-    const inputTextEl = document.getElementById('inputText');
+    const inputTextEl = getInputTextElement();
     if (inputTextEl) {
         // 使用防抖函数，延迟300毫秒
         const debouncedPerformConversion = debounce(() => {
@@ -1069,10 +1094,20 @@ function initializeEventListeners() {
 }
 
 function initializeApp() {
+    if (appInitialized) {
+        return;
+    }
+
+    appInitialized = true;
     console.log('古籍篆楷轉換工具初始化...');
 
     // 加载应用设置
     loadAppSettings();
+
+    const outputText = getOutputTextElement();
+    if (outputText) {
+        outputText.innerHTML = getDefaultOutputMarkup(AppState.conversionDirection);
+    }
 
     // 加载自定义映射
     loadCustomMappings();
@@ -1119,23 +1154,6 @@ function initializeApp() {
             }
         }
         
-        // 恢复兼容模式设置
-        const savedCompatibility = localStorage.getItem('seal-converter-compatibility-settings');
-        if (savedCompatibility) {
-            const parsed = JSON.parse(savedCompatibility);
-            // 如果之前启用了兼容模式，重新启用
-            if (parsed.enabled && window.CompatibilityMode) {
-                CompatibilityMode.enabled = parsed.enabled;
-                CompatibilityMode.currentProvider = parsed.currentProvider || 'svgfonts';
-                CompatibilityMode.settings = { ...CompatibilityMode.settings, ...parsed };
-                
-                // 更新UI显示
-                const currentFontEl = document.getElementById('currentFont');
-                if (currentFontEl) {
-                    currentFontEl.textContent = '圖片兼容模式';
-                }
-            }
-        }
     } catch (e) {
         console.error('恢复设置失败:', e);
     }
@@ -1159,7 +1177,7 @@ function initializeApp() {
 
     // 步骤13: 自动执行一次转换（如果有输入内容）
     setTimeout(() => {
-        const inputText = document.getElementById('inputText');
+        const inputText = getInputTextElement();
         if (inputText && inputText.value.trim()) {
             performConversion();
         }

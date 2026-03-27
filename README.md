@@ -1,5 +1,8 @@
 # 古籍篆楷轉換臺
 
+語言切換：
+[默认](README.md) | [简体中文](READMD-cn.md) | [English](README-en.md) | [日本語](READMD-jp.md) | [繁體中文](README-tw.md)
+
 一個將繁體中文轉換為篆書楷化字的在線工具，讓您的"對手"體驗古文字之美。
 
 ## 項目簡介
@@ -157,9 +160,7 @@
 ## 字体版权声明
 本工具中使用的字體資源分別屬於其版權所有者：
 
-- 思源宋体：[Copyright Adobe](https://adobe.ly/SourceHanSerif)
-
-- MiSans_L3：[版權歸小米科技有限責任公司所有](https://hyperos.mi.com/font/about)
+- 老宋体：[版權歸屬](https://tieba.baidu.com/home/main?un=%E5%A4%A9%E7%8E%8B%E5%B8%9D%E5%BB%B7&fr=home&id=tb.1.3ae0f0a7.jWVk_ZGhi3FTJbd8beY_Ng)，[來源:匯文系列字體](https://tieba.baidu.com/p/9339425294?pid=151397441713&cid=#151397441713)
 
 - 汇文仿宋：[版權歸屬](https://tieba.baidu.com/home/main?un=%E5%A4%A9%E7%8E%8B%E5%B8%9D%E5%BB%B7&fr=home&id=tb.1.3ae0f0a7.jWVk_ZGhi3FTJbd8beY_Ng)，[來源:匯文系列字體](https://tieba.baidu.com/p/9339425294?pid=151397441713&cid=#151397441713)
 
@@ -167,6 +168,4 @@
 
 # 致謝
 ###  感謝百度翻譯簡繁轉換
-###  感謝Google提供的思源宋體開源字體
-###  感謝小米科技有限責任公司提供的MiSans字體
 ###  感謝匯文仿宋的設計者

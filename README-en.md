@@ -158,9 +158,7 @@ The project uses a predefined mapping table to convert modern Chinese characters
 ## Font Copyright Statement
 The font resources used in this tool belong to their respective copyright owners:
 
-- Source Han Serif: https://adobe.ly/SourceHanSerif
-
-- MiSans_L3: https://hyperos.mi.com/font/about
+- LaoSongTi: rights attribution and source are the same as Huiwen Fangsong: https://tieba.baidu.com/home/main?un=%E5%A4%A9%E7%8E%8B%E5%B8%9D%E5%BB%B7&fr=home&id=tb.1.3ae0f0a7.jWVk_ZGhi3FTJbd8beY_Ng, https://tieba.baidu.com/p/9339425294?pid=151397441713&cid=#151397441713
 
 - Huiwen Fangsong: https://tieba.baidu.com/home/main?un=%E5%A4%A9%E7%8E%8B%E5%B8%9D%E5%BB%B7&fr=home&id=tb.1.3ae0f0a7.jWVk_ZGhi3FTJbd8beY_Ng, https://tieba.baidu.com/p/9339425294?pid=151397441713&cid=#151397441713
 
@@ -168,6 +166,4 @@ The font resources used in this tool belong to their respective copyright owners
 
 # Acknowledgments
 ### Thanks to Baidu Translate for simplified-traditional conversion
-### Thanks to Google for the open-source Source Han Serif font
-### Thanks to Xiaomi Technology Co., Ltd. for the MiSans font
 ### Thanks to the designer of Huiwen Fangsong

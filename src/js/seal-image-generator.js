@@ -2,6 +2,10 @@
 
 (function() {
     'use strict';
+
+    const STORAGE_KEYS = {
+        CUSTOM_MAPPINGS: 'seal-converter-custom-mappings'
+    };
     
     // ========== 状态管理 ==========
     const AppState = {
@@ -61,20 +65,94 @@
                window.innerWidth <= 768;
     }
     
-    // 判断字符是否为扩展汉字（篆书）
-    function isSealCharacter(char) {
-        if (!char || char.length === 0) return false;
-        
+    function getMergedSealMappings() {
+        const mergedMappings = { ...(typeof SealMapping === 'object' && SealMapping ? SealMapping : {}) };
+
         try {
-            const code = char.codePointAt(0);
-            // 扩展汉字区范围
-            return (code >= 0x20000 && code <= 0x2A6DF) ||  // 扩展B区
-                   (code >= 0x2A700 && code <= 0x2B73F) ||  // 扩展C区
-                   (code >= 0x2B740 && code <= 0x2B81F) ||  // 扩展D区
-                   (code >= 0x2B820 && code <= 0x2CEAF);    // 扩展E区
-        } catch (e) {
-            return false;
+            const customMappings = localStorage.getItem(STORAGE_KEYS.CUSTOM_MAPPINGS);
+            if (customMappings) {
+                const parsedMappings = JSON.parse(customMappings);
+                if (parsedMappings && typeof parsedMappings === 'object') {
+                    Object.assign(mergedMappings, parsedMappings);
+                }
+            }
+        } catch (error) {
+            console.warn('讀取自定義映射失敗:', error);
         }
+
+        return mergedMappings;
+    }
+
+    function addSealMappingTargets(sealCharacters, mappings) {
+        Object.entries(mappings).forEach(([source, target]) => {
+            if (typeof source !== 'string' || typeof target !== 'string' || !target || source === target) {
+                return;
+            }
+
+            safeStringSplit(target).forEach(char => {
+                if (char) {
+                    sealCharacters.add(char);
+                }
+            });
+        });
+    }
+
+    function extractMappingsFromSourceText(sourceText) {
+        const mappings = [];
+        const mappingPattern = /'([^']+)'\s*:\s*'([^']*)'/g;
+        let match;
+
+        while ((match = mappingPattern.exec(sourceText)) !== null) {
+            mappings.push([match[1], match[2]]);
+        }
+
+        return mappings;
+    }
+
+    async function refreshSealCharacterSet() {
+        const sealCharacters = new Set();
+
+        try {
+            const response = await fetch('./src/js/CtoChin.js', { cache: 'no-store' });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const sourceText = await response.text();
+            extractMappingsFromSourceText(sourceText).forEach(([source, target]) => {
+                if (!target || source === target) {
+                    return;
+                }
+
+                safeStringSplit(target).forEach(char => {
+                    if (char) {
+                        sealCharacters.add(char);
+                    }
+                });
+            });
+        } catch (error) {
+            console.warn('讀取原始映射文件失敗，回退到運行時映射:', error);
+            addSealMappingTargets(sealCharacters, getMergedSealMappings());
+        }
+
+        addSealMappingTargets(sealCharacters, getMergedSealMappings());
+        sealCharacterSet = sealCharacters;
+        return sealCharacterSet;
+    }
+
+    function buildSealCharacterSet() {
+        const sealCharacters = new Set();
+
+        addSealMappingTargets(sealCharacters, getMergedSealMappings());
+
+        return sealCharacters;
+    }
+
+    let sealCharacterSet = buildSealCharacterSet();
+
+    // 根据映射表判断字符是否为篆书字
+    function isSealCharacter(char) {
+        return !!char && sealCharacterSet.has(char);
     }
     
     // 安全分割字符串，正确处理代理对
@@ -123,6 +201,53 @@
             elements.loadingOverlay.style.display = show ? 'flex' : 'none';
         }
         AppState.isGenerating = show;
+    }
+
+    function getCanvasOrThrow() {
+        const canvas = elements.imageCanvas;
+        if (!canvas) {
+            throw new Error('找不到畫布元素');
+        }
+        return canvas;
+    }
+
+    function getCurrentLayout() {
+        if (!elements.layoutRadios || elements.layoutRadios.length === 0) {
+            return 'vertical';
+        }
+
+        const selectedLayout = document.querySelector('input[name="layout"]:checked');
+        return selectedLayout ? selectedLayout.value : 'vertical';
+    }
+
+    function getRenderSettings() {
+        return {
+            fontSize: elements.fontSize ? parseInt(elements.fontSize.value) : 36,
+            lineHeightRatio: elements.lineHeight ? parseFloat(elements.lineHeight.value) : 1.8,
+            margin: elements.marginSize ? parseInt(elements.marginSize.value) : 40,
+            showGrid: elements.showGrid ? elements.showGrid.checked : true,
+            paperTexture: elements.paperTexture ? elements.paperTexture.checked : false,
+            bgColor: elements.bgColor ? elements.bgColor.value : '#fefaf0',
+            textColor: elements.textColor ? elements.textColor.value : '#3c2f23',
+            sealColor: elements.sealColor ? elements.sealColor.value : '#8B4513',
+            layout: getCurrentLayout()
+        };
+    }
+
+    function drawCanvasBackground(ctx, canvas, bgColor, paperTexture) {
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (paperTexture) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
+            ctx.filter = 'url(#noise-filter-1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.filter = 'none';
+        }
+    }
+
+    function setCharacterFillStyle(ctx, char, textColor, sealColor) {
+        ctx.fillStyle = isSealCharacter(char) ? sealColor : textColor;
     }
     
     // ========== 字体管理 (使用FontManager) ==========
@@ -331,31 +456,20 @@
             // 等待字体加载完成
             await document.fonts.ready;
             
-            const canvas = elements.imageCanvas;
-            if (!canvas) {
-                throw new Error('找不到畫布元素');
-            }
-            
+            const canvas = getCanvasOrThrow();
             const ctx = canvas.getContext('2d');
             
-            // 获取设置
-            const fontSize = elements.fontSize ? parseInt(elements.fontSize.value) : 36;
-            const lineHeightRatio = elements.lineHeight ? parseFloat(elements.lineHeight.value) : 1.8;
-            const margin = elements.marginSize ? parseInt(elements.marginSize.value) : 40;
-            const showGrid = elements.showGrid ? elements.showGrid.checked : true;
-            const paperTexture = elements.paperTexture ? elements.paperTexture.checked : false;
-            const bgColor = elements.bgColor ? elements.bgColor.value : '#fefaf0';
-            const textColor = elements.textColor ? elements.textColor.value : '#3c2f23';
-            const sealColor = elements.sealColor ? elements.sealColor.value : '#8B4513';
-            
-            // 获取布局设置
-            let layout = 'vertical';
-            if (elements.layoutRadios && elements.layoutRadios.length > 0) {
-                const selectedLayout = document.querySelector('input[name="layout"]:checked');
-                if (selectedLayout) {
-                    layout = selectedLayout.value;
-                }
-            }
+            const {
+                fontSize,
+                lineHeightRatio,
+                margin,
+                showGrid,
+                paperTexture,
+                bgColor,
+                textColor,
+                sealColor,
+                layout
+            } = getRenderSettings();
             
             // 使用FontManager获取当前字体
             const fontFamily = FontManager.currentFont ? 
@@ -383,18 +497,8 @@
                 
                 canvas.width = canvasWidth;
                 canvas.height = canvasHeight;
-                
-                // 绘制背景
-                ctx.fillStyle = bgColor;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // 绘制纸张纹理
-                if (paperTexture) {
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
-                    ctx.filter = 'url(#noise-filter-1)';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.filter = 'none';
-                }
+
+                drawCanvasBackground(ctx, canvas, bgColor, paperTexture);
                 
                 // 绘制网格
                 if (showGrid) {
@@ -437,9 +541,8 @@
                     const x = canvas.width - margin - column * columnWidth - fontSize / 2;
                     // y坐标：从上边开始
                     const y = margin + row * lineHeight + lineHeight / 2;
-                    
-                    // 设置颜色
-                    ctx.fillStyle = isSealCharacter(char) ? sealColor : textColor;
+
+                    setCharacterFillStyle(ctx, char, textColor, sealColor);
                     
                     // 根据设备类型调整文字方向
                     if (isMobile) {
@@ -488,18 +591,8 @@
                 
                 canvas.width = canvasWidth;
                 canvas.height = canvasHeight;
-                
-                // 绘制背景
-                ctx.fillStyle = bgColor;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // 绘制纸张纹理
-                if (paperTexture) {
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
-                    ctx.filter = 'url(#noise-filter-1)';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.filter = 'none';
-                }
+
+                drawCanvasBackground(ctx, canvas, bgColor, paperTexture);
                 
                 // 重新设置字体
                 ctx.font = `bold ${fontSize}px ${fontFamily}`;
@@ -514,16 +607,8 @@
                     
                     // 绘制每个字符
                     for (const char of safeStringSplit(line)) {
-                        ctx.fillStyle = isSealCharacter(char) ? sealColor : textColor;
-                        
-                        // 横排布局下，根据设备类型调整文字方向
-                        if (isMobile) {
-                            // 手机端：横排文字正常绘制
-                            ctx.fillText(char, x, y);
-                        } else {
-                            // 电脑端：横排文字正常绘制（不旋转）
-                            ctx.fillText(char, x, y);
-                        }
+                        setCharacterFillStyle(ctx, char, textColor, sealColor);
+                        ctx.fillText(char, x, y);
                         
                         x += ctx.measureText(char).width;
                     }
@@ -566,8 +651,10 @@
             return;
         }
         
-        const canvas = elements.imageCanvas;
-        if (!canvas) {
+        let canvas;
+        try {
+            canvas = getCanvasOrThrow();
+        } catch (error) {
             updateStatus('找不到畫布元素', 'error');
             return;
         }
@@ -591,8 +678,10 @@
             return;
         }
         
-        const canvas = elements.imageCanvas;
-        if (!canvas) {
+        let canvas;
+        try {
+            canvas = getCanvasOrThrow();
+        } catch (error) {
             updateStatus('找不到畫布元素', 'error');
             return;
         }
@@ -811,6 +900,12 @@
         
         // 初始化事件监听器
         initEventListeners();
+
+        refreshSealCharacterSet().then(() => {
+            if (elements.textInput && elements.textInput.value.trim()) {
+                generateImage();
+            }
+        });
         
         // 初始生成图片
         setTimeout(generateImage, 1000);

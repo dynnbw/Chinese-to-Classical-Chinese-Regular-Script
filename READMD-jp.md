@@ -158,9 +158,7 @@ https://dynnbw.github.io/Chinese-to-Classical-Chinese-Regular-Script/ に直接�
 ## フォント著作権表示
 本ツールで使用されているフォントリソースは、それぞれの著作権所有者に帰属します：
 
-- 源ノ明朝（Source Han Serif）: https://adobe.ly/SourceHanSerif
-
-- MiSans_L3: https://hyperos.mi.com/font/about
+- 老宋体（LaoSongTi）: 権利帰属と出典は匯文仿宋と同じです: https://tieba.baidu.com/home/main?un=%E5%A4%A9%E7%8E%8B%E5%B8%9D%E5%BB%B7&fr=home&id=tb.1.3ae0f0a7.jWVk_ZGhi3FTJbd8beY_Ng、https://tieba.baidu.com/p/9339425294?pid=151397441713&cid=#151397441713
 
 - 匯文仿宋（Huiwen Fangsong）: https://tieba.baidu.com/home/main?un=%E5%A4%A9%E7%8E%8B%E5%B8%9D%E5%BB%B7&fr=home&id=tb.1.3ae0f0a7.jWVk_ZGhi3FTJbd8beY_Ng、https://tieba.baidu.com/p/9339425294?pid=151397441713&cid=#151397441713
 
@@ -168,6 +166,4 @@ https://dynnbw.github.io/Chinese-to-Classical-Chinese-Regular-Script/ に直接�
 
 # 謝辞
 ### 百度翻訳の簡体字繁体字変換に感謝します
-### Googleが提供するオープンソースフォント、源ノ明朝に感謝します
-### 小米科技有限責任公司が提供するMiSansフォントに感謝します
 ### 匯文仿宋のデザイナーに感謝します

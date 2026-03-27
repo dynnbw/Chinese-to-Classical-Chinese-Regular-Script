@@ -1,2 +1,4 @@
 fonts/UNI_CJK/SVG/*.svg
 fonts/UNI_CJK/*.sfd
+docs
+.venv

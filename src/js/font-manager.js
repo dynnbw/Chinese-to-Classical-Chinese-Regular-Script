@@ -7,6 +7,32 @@ const FONT_STORAGE_KEYS = {
     COMPATIBILITY_SETTINGS: 'seal-converter-compatibility-settings'
 };
 
+const LOCAL_FONT_COLLECTIONS = {
+    'noto-serif': {
+        family: 'Unicode17_CJK',
+        type: 'local-collection',
+        faces: [
+            {
+                src: './fonts/Unicode17_CJK_0.ttf',
+                unicodeRange: 'U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+2F800-2FA1F'
+            },
+            {
+                src: './fonts/Unicode17_CJK_3.ttf',
+                unicodeRange: 'U+20000-2A6DF, U+2A700-2B73F, U+2B740-2B81F, U+2B820-2CEAF, U+2CEB0-2EBEF, U+2EBF0-2EE5F'
+            },
+            {
+                src: './fonts/Unicode17_CJK_2.ttf',
+                unicodeRange: 'U+30000-3134F, U+31350-323AF, U+323B0-3347F'
+            },
+            {
+                src: './fonts/Unicode17_CJK_1.ttf'
+            }
+        ]
+    }
+};
+
+let fontSettingsInitialized = false;
+
 // 字体管理器 (带LRU缓存清理机制)
 const FontManager = {
     currentFont: null,
@@ -93,6 +119,10 @@ const FontManager = {
     removeFromCache(key) {
         const cacheEntry = this.fontCache.get(key);
         if (cacheEntry) {
+            if (cacheEntry.styleElement && cacheEntry.styleElement.parentNode) {
+                cacheEntry.styleElement.parentNode.removeChild(cacheEntry.styleElement);
+            }
+
             // 如果有关联的objectURL，释放它
             if (cacheEntry.objectURL) {
                 URL.revokeObjectURL(cacheEntry.objectURL);
@@ -102,7 +132,9 @@ const FontManager = {
             
             // 从document.fonts中移除字体
             try {
-                document.fonts.delete(cacheEntry.fontFace);
+                if (cacheEntry.fontFace) {
+                    document.fonts.delete(cacheEntry.fontFace);
+                }
             } catch (e) {
                 console.warn(`无法从document.fonts中移除字体 ${key}:`, e);
             }
@@ -161,10 +193,77 @@ const FontManager = {
         return keys.length;
     },
 
+    async loadLocalFontCollection(fontId, collection, fontName, updateStatusCallback = null) {
+        try {
+            if (updateStatusCallback) {
+                updateStatusCallback(`正在加載字體: ${fontName}...`, 'warning');
+            }
+
+            const cachedFont = this.getFromCache(fontId);
+            if (cachedFont) {
+                this.currentFont = {
+                    id: fontId,
+                    name: fontName,
+                    family: collection.family,
+                    type: collection.type
+                };
+
+                this.applyCurrentFont();
+                if (updateStatusCallback) {
+                    updateStatusCallback(`已從緩存加載字體: ${fontName}`, 'good');
+                }
+
+                if (CompatibilityMode.enabled) {
+                    CompatibilityMode.disable(updateStatusCallback);
+                }
+                return true;
+            }
+
+            const styleElement = document.createElement('style');
+            styleElement.setAttribute('data-font-collection', fontId);
+            styleElement.textContent = collection.faces.map(face => {
+                const unicodeRange = face.unicodeRange ? `\n    unicode-range: ${face.unicodeRange};` : '';
+                return `@font-face {\n    font-family: '${collection.family}';\n    src: url('${face.src}') format('truetype');${unicodeRange}\n    font-display: swap;\n}`;
+            }).join('\n\n');
+            document.head.appendChild(styleElement);
+
+            this.currentFont = {
+                id: fontId,
+                name: fontName,
+                family: collection.family,
+                type: collection.type
+            };
+
+            this.addToCache(fontId, { family: collection.family }, null).styleElement = styleElement;
+
+            this.applyCurrentFont();
+            if (updateStatusCallback) {
+                updateStatusCallback(`字體加載成功: ${fontName}`, 'good');
+            }
+            this.saveFontSettings();
+
+            if (CompatibilityMode.enabled) {
+                CompatibilityMode.disable(updateStatusCallback);
+            }
+
+            return true;
+        } catch (error) {
+            if (updateStatusCallback) {
+                updateStatusCallback(`字體加載失敗: ${error.message}`, 'error');
+            }
+            return false;
+        }
+    },
+
     async loadCloudFont(fontId, fontUrl, fontName, updateStatusCallback = null) {
         try {
             if (updateStatusCallback) {
                 updateStatusCallback(`正在加載字體: ${fontName}...`, 'warning');
+            }
+
+            const localCollection = LOCAL_FONT_COLLECTIONS[fontId];
+            if (localCollection) {
+                return this.loadLocalFontCollection(fontId, localCollection, fontName, updateStatusCallback);
             }
             
             // 检查缓存中是否已有该字体
@@ -174,7 +273,7 @@ const FontManager = {
                     id: fontId,
                     name: fontName,
                     family: fontName.includes('Noto Serif SC') ? 'Noto Serif SC' :
-                        fontName.includes('MiSans_L3') ? 'MiSans_L3' : fontName,
+                        fontName.includes('LaoSongTi') ? 'LaoSongTi' : fontName,
                     type: 'cloud'
                 };
 
@@ -200,7 +299,7 @@ const FontManager = {
                     id: fontId,
                     name: fontName,
                     family: fontName.includes('Noto Serif SC') ? 'Noto Serif SC' :
-                        fontName.includes('MiSans_L3') ? 'MiSans_L3' : fontName,
+                        fontName.includes('LaoSongTi') ? 'LaoSongTi' : fontName,
                     type: 'cloud'
                 };
 
@@ -275,8 +374,7 @@ const FontManager = {
                 return true;
             }
 
-            const arrayBuffer = await this.readFileAsArrayBuffer(file);
-            // 创建ObjectURL
+            // 直接创建ObjectURL，无需先读取ArrayBuffer（FontFace可直接使用URL，避免双倍内存占用）
             const objectURL = URL.createObjectURL(file);
             
             // 修复：正确创建FontFace对象
@@ -314,15 +412,6 @@ const FontManager = {
             }
             return false;
         }
-    },
-
-    readFileAsArrayBuffer(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsArrayBuffer(file);
-        });
     },
 
     applySystemFont(fontId, updateStatusCallback = null) {
@@ -401,10 +490,67 @@ const FontManager = {
         }
     },
 
-    applyFontSettings(fontData) {
-        if (!fontData) return;
+    findPresetFontOption(fontId) {
+        return document.querySelector(`.font-option[data-font="${fontId}"]`);
+    },
+
+    async restoreSavedFont(fontData) {
+        if (!fontData || !fontData.id) return;
+
+        if (fontData.type === 'compatibility') {
+            this.applyCompatibilityMode(
+                CompatibilityMode.currentProvider || 'svgfonts'
+            );
+            return;
+        }
+
+        const localCollection = LOCAL_FONT_COLLECTIONS[fontData.id];
+        if (localCollection) {
+            await this.loadLocalFontCollection(
+                fontData.id,
+                localCollection,
+                fontData.name || localCollection.family
+            );
+            return;
+        }
+
+        if (fontData.type === 'system') {
+            this.applySystemFont(fontData.id);
+            return;
+        }
+
+        if (fontData.type === 'cloud') {
+            let fontUrl = null;
+            let fontName = fontData.name || fontData.family || fontData.id;
+
+            if (fontData.id === 'custom') {
+                fontUrl = localStorage.getItem(FONT_STORAGE_KEYS.CUSTOM_FONT_URL);
+            } else {
+                const option = this.findPresetFontOption(fontData.id);
+                if (option) {
+                    fontUrl = option.getAttribute('data-url');
+                }
+            }
+
+            if (fontUrl) {
+                await this.loadCloudFont(fontData.id, fontUrl, fontName);
+                return;
+            }
+        }
+
+        // 本地上传字体无法在刷新后恢复文件对象，退回到已保存的样式值。
         this.currentFont = fontData;
         this.applyCurrentFont();
+    },
+
+    applyFontSettings(fontData) {
+        if (!fontData) return;
+
+        this.restoreSavedFont(fontData).catch(error => {
+            console.error('恢復字體設置失敗:', error);
+            this.currentFont = fontData;
+            this.applyCurrentFont();
+        });
     },
 
     // 兼容模式支持
@@ -463,12 +609,7 @@ const CompatibilityMode = {
             if (saved) {
                 const parsed = JSON.parse(saved);
                 this.settings = { ...this.settings, ...parsed };
-                
-                // 如果之前启用了兼容模式，重新启用
-                if (parsed.enabled) {
-                    this.enabled = parsed.enabled;
-                    this.currentProvider = parsed.currentProvider || 'svgfonts';
-                }
+                this.currentProvider = parsed.currentProvider || 'svgfonts';
             }
         } catch (e) {
             console.error('加载兼容模式设置失败:', e);
@@ -710,6 +851,7 @@ const CompatibilityMode = {
     // 禁用兼容模式
     disable(updateStatusCallback = null) {
         this.enabled = false;
+        this.saveSettings();
         if (updateStatusCallback) {
             updateStatusCallback('已禁用圖片兼容模式', 'good');
         }
@@ -727,6 +869,12 @@ const CompatibilityMode = {
     
     // 初始化事件监听器
     initializeEventListeners() {
+        if (this._eventListenersInitialized) {
+            return;
+        }
+
+        this._eventListenersInitialized = true;
+
         const testBtn = document.getElementById('testCompatibilityBtn');
         if (testBtn) {
             testBtn.addEventListener('click', () => {
@@ -819,13 +967,17 @@ const CompatibilityMode = {
     // 格式化文本为图片（用于转换结果显示）
     formatTextAsImages(text, options = {}) {
         if (!this.enabled || !text) return '';
-        
-        const chars = Array.from(text);
+
+        const charDetails = Array.isArray(options.charDetails) ? options.charDetails : null;
+        const chars = charDetails && charDetails.length > 0
+            ? charDetails
+            : Array.from(text).map(char => ({ char, isSealTarget: false }));
         let html = '';
-        
-        chars.forEach(char => {
+
+        chars.forEach(({ char, isSealTarget }) => {
             const img = this.createCharImage(char, options);
-            html += `<div class="char-container">${img.outerHTML}</div>`;
+            const containerClass = isSealTarget ? 'char-container compat-seal-char' : 'char-container';
+            html += `<div class="${containerClass}">${img.outerHTML}</div>`;
         });
         
         return html;
@@ -836,6 +988,12 @@ const CompatibilityMode = {
 
 // 字体设置面板初始化
 function initializeFontSettings(updateStatusCallback = null) {
+    if (fontSettingsInitialized) {
+        return;
+    }
+
+    fontSettingsInitialized = true;
+
     const tabButtons = document.querySelectorAll('.font-tab-btn');
     tabButtons.forEach(button => {
         button.addEventListener('click', function () {
@@ -1010,9 +1168,9 @@ async function applySelectedFont(updateStatusCallback = null) {
 
         } else {
             const fontUrl = selectedOption.getAttribute('data-url');
-            const fontName = fontId === 'Huiwen' ? 'Huiwen' :
-                fontId === 'noto-serif' ? 'Noto Serif SC' :
-                    fontId === 'MiSans' ? 'MiSans_L3' : fontId;
+            const fontName = fontId === 'HuiWenFangSong' ? 'HuiWenFangSong' :
+                fontId === 'noto-serif' ? 'Unicode17_CJK' :
+                    fontId === 'LaoSongTi' ? 'LaoSongTi' : fontId;
 
             await FontManager.loadCloudFont(fontId, fontUrl, fontName, updateStatusCallback);
         }

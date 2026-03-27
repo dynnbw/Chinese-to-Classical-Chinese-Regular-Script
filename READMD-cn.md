@@ -157,9 +157,7 @@
 ## 字体版权声明
 本工具中使用的字体资源分别属于其版权所有者：
 
-- 思源宋体：[Copyright 2014-2020 Adobe](http://www.adobe.com/), with Reserved Font Name 'Source'. [Copyright 2014-2020 Google](http://www.google.com/), with Reserved Font Name 'Noto'.
-
-- MiSans_L3：[版权归小米科技有限责任公司所有]（https://hyperos.mi.com/font/about）
+- 老宋体：[版权归属]（https://tieba.baidu.com/home/main?un=%E5%A4%A9%E7%8E%8B%E5%B8%9D%E5%BB%B7&fr=home&id=tb.1.3ae0f0a7.jWVk_ZGhi3FTJbd8beY_Ng），[来源：汇文系列字体]（https://tieba.baidu.com/p/9339425294?pid=151397441713&cid=#151397441713）
 
 - 汇文仿宋：[版权归属]（https://tieba.baidu.com/home/main?un=%E5%A4%A9%E7%8E%8B%E5%B8%9D%E5%BB%B7&fr=home&id=tb.1.3ae0f0a7.jWVk_ZGhi3FTJbd8beY_Ng），[来源：汇文系列字体]（https://tieba.baidu.com/p/9339425294?pid=151397441713&cid=#151397441713）
 
@@ -167,6 +165,4 @@
 
 # 致谢
 ### 感谢百度翻译简繁转换
-### 感谢Google提供的思源宋体开源字体
-### 感谢小米科技有限责任公司提供的MiSans字体
 ### 感谢汇文仿宋的设计者

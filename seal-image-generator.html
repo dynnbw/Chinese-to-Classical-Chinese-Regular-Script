@@ -23,36 +23,36 @@
 
                 <!-- 使用与index.html相同的字体选项卡结构 -->
                 <div class="font-tab">
-                    <button class="font-tab-btn active" data-tab="cloud">雲端字體</button>
+                    <button class="font-tab-btn active" data-tab="cloud">預置字體</button>
                     <button class="font-tab-btn" data-tab="local">本地字體</button>
                     <button class="font-tab-btn" data-tab="system">系統字體</button>
                     <button class="font-tab-btn" data-tab="compatibility">兼容模式</button>
                 </div>
 
-                <!-- 雲端字體選項卡 -->
+                <!-- 預置字體選項卡 -->
                 <div id="cloud-tab" class="font-tab-content active">
-                    <p>選擇一個雲端字體：</p>
+                    <p>選擇一個預置字體：</p>
 
-                    <div class="font-option" data-font="Huiwen"
-                        data-url="https://raw.githubusercontent.com/dynnbw/Chinese-to-Classical-Chinese-Regular-Script/refs/heads/main/fonts/%E6%B1%87%E6%96%87%E4%BB%BF%E5%AE%8Bv1.001.ttf">
+                    <div class="font-option" data-font="HuiWenFangSong"
+                        data-url="./fonts/HuiWenFangSong.ttf">
                         <div class="font-name">汇文仿宋</div>
                         <div class="font-description">支持大量漢字，包括部分擴展區字符，適合古籍顯示</div>
-                        <div class="font-preview" style="font-family: 'Huiwen', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
+                        <div class="font-preview" style="font-family: 'HuiWenFangSong', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
                     </div>
 
                     <div class="font-option" data-font="noto-serif"
-                        data-url="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap">
-                        <div class="font-name">思源宋體 (Noto Serif SC)</div>
-                        <div class="font-description">Google開源字體，支持簡體和繁體中文</div>
-                        <div class="font-preview" style="font-family: 'Noto Serif SC', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸
+                        data-url="./fonts/Unicode17_CJK_0.ttf">
+                        <div class="font-name">Unicode17_CJK</div>
+                        <div class="font-description">按碼點映射加載 4 個本地 TTF 文件，覆蓋常用字、擴展區與回退字形</div>
+                        <div class="font-preview" style="font-family: 'Unicode17_CJK', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸
                         </div>
                     </div>
 
-                    <div class="font-option" data-font="MiSans"
-                        data-url="https://raw.githubusercontent.com/dynnbw/Chinese-to-Classical-Chinese-Regular-Script/refs/heads/main/fonts/MiSans%20L3.ttf">
-                        <div class="font-name">MiSans_L3</div>
-                        <div class="font-description">支持大量生僻字，注:本字体版权归属小米科技有限责任公司</div>
-                        <div class="font-preview" style="font-family: 'MiSans', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
+                    <div class="font-option" data-font="LaoSongTi"
+                        data-url="./fonts/LaoSongTi.ttf">
+                        <div class="font-name">老宋体</div>
+                        <div class="font-description">支持大量漢字，字形來源於古籍</div>
+                        <div class="font-preview" style="font-family: 'LaoSongTi', serif;">天地日月山水木金火土 𠀘𡍑𡆠𡴑𡴸</div>
                     </div>
 
                     <div class="font-option" data-font="custom-url">
