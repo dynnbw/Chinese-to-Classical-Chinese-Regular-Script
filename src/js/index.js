@@ -849,6 +849,18 @@ function loadConversionDirection() {
 // ========== 新增：图片生成器功能 ==========
 
 /**
+ * 打开字体测试工具
+ */
+function openFontTest() {
+    const text = getLatestPureText() || getInputTextElement().value || '';
+    const encodedText = text ? encodeURIComponent(text) : '';
+    const url = encodedText ? `font-test.html?text=${encodedText}` : 'font-test.html';
+    
+    window.open(url, '_blank', 'width=1200,height=800');
+    updateStatus('字體測試工具已打開', 'good');
+}
+
+/**
  * 打开图片生成器并传递纯文字
  */
 function openImageGenerator() {
@@ -977,7 +989,7 @@ function initializeEventListeners() {
         }
     });
     
-    if (fontTestBtn) fontTestBtn.addEventListener('click', testFontDisplay);
+    if (fontTestBtn) fontTestBtn.addEventListener('click', openFontTest);
     if (debugBtn) debugBtn.addEventListener('click', showDebugInfo);
 
     // 面板控制按钮
