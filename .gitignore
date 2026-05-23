@@ -3,3 +3,5 @@ fonts/UNI_CJK/*.sfd
 docs
 .venv
 .mapping_tool_state.json
+src/node_modules
+src/dist

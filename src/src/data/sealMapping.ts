@@ -2,7 +2,7 @@
 // 生成时间: 2026-04-04 17:27:38
 // 数据来源: 汉典（www.zdic.net）
 
-const SealMapping = {
+const SealMapping: Record<string, string> = {
     // U+4E00
     '一': '弌',
     // U+4E01
@@ -2061,7 +2061,4 @@ const SealMapping = {
     '𠊯': '叜'
 };
 
-// 使用示例:
-// function convertToSeal(char) {
-//     return SealMapping[char] || char;
-// }
+export { SealMapping };
