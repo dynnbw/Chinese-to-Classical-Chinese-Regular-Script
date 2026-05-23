@@ -88,6 +88,10 @@ class SealCharacterTool:
         self.variant_displayed = False  # 标记异体字是否已渲染
         self.last_variant_count = 0     # 记录上次异体字数量，避免重复渲染
         self.last_width = 0             # 记录窗口宽度，用于resize判断
+        self.last_variant_list: List[Dict[str, str]] = []
+        self.variant_buttons: List[tk.Button] = []
+        self.variant_selected_index = -1
+        self.variant_grid_cols = 1
         
         # 界面布局
         self.setup_ui()
@@ -436,6 +440,8 @@ class SealCharacterTool:
         """修复异体字刷新不及时：移除不必要的刷新限制，确保内容变化时强制更新"""
         self.last_variant_list = variants
         current_count = len(variants)
+        self.variant_buttons = []
+        self.variant_selected_index = -1
         
         # 移除原有的计数/状态判断，确保每次调用都刷新
         self.last_variant_count = current_count
@@ -455,6 +461,7 @@ class SealCharacterTool:
         # 优化列数计算（减少网格布局重绘）
         canvas_width = self.variant_canvas.winfo_width() or 400
         cols = max(2, min(3, canvas_width // 160))
+        self.variant_grid_cols = cols
         
         # 批量创建组件，减少UI更新次数
         for i, variant in enumerate(variants):
@@ -472,12 +479,13 @@ class SealCharacterTool:
             btn = tk.Button(
                 char_frame, text=variant["char"], 
                 font=("微软雅黑", 28), width=2,
-                command=lambda c=variant["char"]: self.select_variant(c),
+                command=lambda idx=i, c=variant["char"]: self._handle_variant_click(idx, c),
                 bg="#e8f4f8", relief=tk.RAISED,
                 cursor="hand2",
                 activebackground="#d0e8f0"
             )
             btn.pack(side=tk.LEFT, padx=4)
+            self.variant_buttons.append(btn)
             
             unicode_label = tk.Label(
                 char_frame, text=f"U+{char_unicode:04X}", 
@@ -499,9 +507,104 @@ class SealCharacterTool:
                     btn_frame, text="跳转", width=9,
                     command=lambda c=variant["char"]: self.jump_to_variant(c)
                 ).pack(side=tk.LEFT, padx=2)
+
+        self._set_variant_selected_index(0, update_editor=True)
         
         # 强制更新滚动区域（关键：确保刷新）
         self.root.after(0, self._update_variant_scrollregion, None)
+
+    def _handle_variant_click(self, index: int, seal_char: str):
+        self._set_variant_selected_index(index, update_editor=True)
+        self.select_variant(seal_char)
+
+    def _set_variant_selected_index(self, index: int, update_editor: bool = False):
+        if not self.variant_buttons:
+            self.variant_selected_index = -1
+            return
+
+        new_index = max(0, min(index, len(self.variant_buttons) - 1))
+        self.variant_selected_index = new_index
+
+        for btn_index, btn in enumerate(self.variant_buttons):
+            if btn_index == self.variant_selected_index:
+                btn.config(bg="#9fd8eb", relief=tk.SUNKEN, bd=2)
+            else:
+                btn.config(bg="#e8f4f8", relief=tk.RAISED, bd=1)
+
+        if update_editor and not self.mapping_edit_active and self.current_mapping_entry["state"] != tk.DISABLED:
+            selected_char = self.last_variant_list[self.variant_selected_index]["char"]
+            self.current_mapping_entry.delete(0, tk.END)
+            self.current_mapping_entry.insert(0, selected_char)
+
+    def _is_text_input_focused(self) -> bool:
+        focus_widget = self.root.focus_get()
+        text_widgets = (
+            self.char_entry,
+            self.unicode_entry,
+            self.current_mapping_entry,
+            self.mapping_text,
+            self.swjz_text,
+            self.swjz_note_text,
+            self.kangxi_text,
+        )
+
+        if focus_widget in text_widgets:
+            return True
+
+        return isinstance(focus_widget, (tk.Entry, ttk.Entry, tk.Text))
+
+    def on_variant_navigation_key(self, event):
+        if self._is_text_input_focused():
+            return
+
+        key = event.keysym
+        if not self.last_variant_list:
+            if key == "Left":
+                self.prev_char()
+            elif key == "Right":
+                self.next_char()
+            return "break"
+
+        cols = max(1, self.variant_grid_cols)
+        current = self.variant_selected_index if self.variant_selected_index >= 0 else 0
+
+        if key == "Left":
+            target = current - 1
+        elif key == "Right":
+            target = current + 1
+        elif key == "Up":
+            target = current - cols
+        elif key == "Down":
+            target = current + cols
+        else:
+            return
+
+        self._set_variant_selected_index(target, update_editor=True)
+        return "break"
+
+    def on_confirm_and_next(self, event=None):
+        focus_widget = self.root.focus_get()
+
+        # 保留输入框原有 Enter 行为（查字/查码）
+        if focus_widget in (self.char_entry, self.unicode_entry, self.mapping_text):
+            return
+
+        if self.mapping_edit_active:
+            self.status_var.set("当前处于整表编辑状态，无法执行快捷确认")
+            return "break"
+
+        selected_char = None
+        if self.last_variant_list and self.variant_selected_index >= 0:
+            selected_char = self.last_variant_list[self.variant_selected_index]["char"]
+
+        if selected_char is not None:
+            saved = self.apply_current_mapping(candidate_char=selected_char, confirm_replace=True)
+        else:
+            saved = self.apply_current_mapping(candidate_char=None, confirm_replace=True)
+
+        if saved:
+            self.next_char()
+        return "break"
     
     # ========== 核心优化3：映射表编辑功能 ==========
     def toggle_mapping_edit(self):
@@ -920,8 +1023,13 @@ class SealCharacterTool:
     
     # ========== 其他基础函数（简化/保留） ==========
     def setup_shortcuts(self):
-        self.root.bind("<Left>", lambda e: self.prev_char())
-        self.root.bind("<Right>", lambda e: self.next_char())
+        self.root.bind("<Left>", self.on_variant_navigation_key)
+        self.root.bind("<Right>", self.on_variant_navigation_key)
+        self.root.bind("<Up>", self.on_variant_navigation_key)
+        self.root.bind("<Down>", self.on_variant_navigation_key)
+        self.root.bind("<Return>", self.on_confirm_and_next)
+        self.root.bind("<Control-Left>", lambda e: self.prev_char())
+        self.root.bind("<Control-Right>", lambda e: self.next_char())
         self.char_entry.bind("<Return>", lambda e: self.query_char())
         self.unicode_entry.bind("<Return>", lambda e: self.query_unicode())
         self.root.bind("<Control-i>", lambda e: self.import_js())
@@ -1393,9 +1501,7 @@ class SealCharacterTool:
         
         try:
             lines = [
-                "// 篆书楷化映射表",
                 "// 生成时间: " + time.strftime("%Y-%m-%d %H:%M:%S"),
-                "// 数据来源: 汉典（www.zdic.net）",
                 "",
                 "const SealMapping = {"
             ]
@@ -1405,15 +1511,9 @@ class SealCharacterTool:
             for i, (k, v) in enumerate(sorted_items):
                 comma = "," if i < len(sorted_items) - 1 else ""
                 unicode_hex = f"{self.char_to_unicode(k):04X}"
-                lines.append(f"    // U+{unicode_hex}")
-                lines.append(f"    '{k}': '{v}'{comma}")
+                lines.append(f"    '{k}': '{v}'{comma} // U+{unicode_hex}")
             
             lines.append("};")
-            lines.append("")
-            lines.append("// 使用示例:")
-            lines.append("// function convertToSeal(char) {")
-            lines.append("//     return SealMapping[char] || char;")
-            lines.append("// }")
             
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write("\n".join(lines))

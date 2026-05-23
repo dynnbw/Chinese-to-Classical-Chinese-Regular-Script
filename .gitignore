@@ -2,3 +2,4 @@ fonts/UNI_CJK/SVG/*.svg
 fonts/UNI_CJK/*.sfd
 docs
 .venv
+.mapping_tool_state.json
