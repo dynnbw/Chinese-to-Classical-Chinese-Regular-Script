@@ -58,20 +58,30 @@ export function convertText(
   const charDetails: CharDetail[] = [];
 
   const map = direction === 'toSeal' ? sealMap : reverseSealMap;
+  const punctuationToColor = new Set(['.', '、', ',', '，', '。', '○']);
+  // 逆向时只对扩展汉字区（𠀘𡍑等）查反向映射，BMP 汉字原样保留
+  const isSealChar = (c: string) => (c.codePointAt(0) ?? 0) >= 0x20000;
 
   for (const char of chars) {
-    const mapped = map?.get(char) ?? null;
+    let mapped: string | null = null;
+    if (direction === 'toSeal') {
+      mapped = map?.get(char) ?? null;
+    } else {
+      // 逆向：仅篆书字符才查表
+      if (isSealChar(char)) mapped = map?.get(char) ?? null;
+    }
     if (mapped && mapped !== char) {
       result += mapped;
       pureText += mapped;
       converted++;
       for (const c of safeSplitChars(mapped)) {
-        charDetails.push({ char: c, isSealTarget: direction === 'toSeal', codePoint: getCharCode(c) });
+        charDetails.push({ char: c, isSealTarget: true, codePoint: getCharCode(c) });
       }
     } else {
       result += char;
       pureText += char;
-      charDetails.push({ char, isSealTarget: false, codePoint: getCharCode(char) });
+      const isPunctuation = direction === 'toSeal' && punctuationToColor.has(char);
+      charDetails.push({ char, isSealTarget: isPunctuation, codePoint: getCharCode(char) });
     }
   }
 

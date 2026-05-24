@@ -6,7 +6,12 @@ import { useFontManager } from './hooks/useFontManager';
 import { useCompatibilityMode } from './hooks/useCompatibilityMode';
 import { initMapping, getMappingSize, exportMapping } from './core/converter';
 import { StorageKeys, getItem, setItem } from './core/storage';
-import { SealMapping } from './data/sealMapping';
+async function loadSealMapping(): Promise<Record<string, string>> {
+  const res = await fetch('./CtoChin.js');
+  const text = await res.text();
+  const fn = new Function(text + '; return SealMapping;');
+  return fn();
+}
 import VerticalContainer from './components/layout/VerticalContainer';
 import Header from './components/header/Header';
 import InputArea from './components/input/InputArea';
@@ -29,6 +34,7 @@ export default function App() {
   const [showFontPanel, setShowFontPanel] = useState(false);
   const [showMappingPanel, setShowMappingPanel] = useState(false);
   const [showConversionPanel, setShowConversionPanel] = useState(false);
+  const mappingReadyRef = useRef(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
 
@@ -51,12 +57,16 @@ export default function App() {
 
   // 初始化映射表 + 恢复持久化状态（字体、兼容模式）
   useEffect(() => {
-    const customMappings = getItem<Record<string, string>>(StorageKeys.CUSTOM_MAPPINGS, {});
-    const merged = { ...SealMapping, ...customMappings };
-    initMapping(merged);
-    dispatch({ type: 'SET_MAPPING_SIZE', payload: getMappingSize() });
-    dispatch({ type: 'SET_LAST_UPDATE', payload: new Date().toLocaleString() });
-    fontManager.restoreFont();
+    (async () => {
+      const customMappings = getItem<Record<string, string>>(StorageKeys.CUSTOM_MAPPINGS, {});
+      const baseMapping = await loadSealMapping();
+      const merged = { ...baseMapping, ...customMappings };
+      initMapping(merged);
+      dispatch({ type: 'SET_MAPPING_SIZE', payload: getMappingSize() });
+      dispatch({ type: 'SET_LAST_UPDATE', payload: new Date().toLocaleString() });
+      mappingReadyRef.current = true;
+      fontManager.restoreFont();
+    })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const doConvert = useCallback(() => {
@@ -73,6 +83,10 @@ export default function App() {
         success: state.stats.success + convResult.converted,
         total: state.stats.total + 1,
       }});
+      dispatch({ type: 'SET_STATUS', payload: {
+        message: `轉換完成: ${convResult.converted}/${convResult.total} 個字符被轉換`,
+        type: 'good',
+      }});
       if (state.settings.autoCopy) {
         navigator.clipboard.writeText(convResult.pureText).catch(() => {});
       }
@@ -82,8 +96,17 @@ export default function App() {
   const toggleDirection = useCallback(() => {
     const newDir = state.direction === 'toSeal' ? 'toTraditional' : 'toSeal';
     dispatch({ type: 'SET_DIRECTION', payload: newDir });
-    setTimeout(doConvert, 50);
-  }, [state.direction, doConvert, dispatch]);
+    dispatch({ type: 'SET_STATUS', payload: {
+      message: newDir === 'toSeal' ? '已切換: 繁體→篆書' : '已切換: 篆書→繁體',
+      type: 'good',
+    }});
+  }, [state.direction, dispatch]);
+
+  // 方向切换后自动重新转换
+  useEffect(() => {
+    if (!inputRef.current?.value.trim()) return;
+    doConvert();
+  }, [state.direction]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadSample = useCallback(() => {
     if (inputRef.current) {
@@ -92,11 +115,13 @@ export default function App() {
         : '𠀘𡍑𡆠𡴑𡴸𣱱𤆄𣎳𨤾𡈽';
       if (state.settings.autoConvert) setTimeout(doConvert, 50);
     }
-  }, [state.direction, state.settings.autoConvert, doConvert]);
+    dispatch({ type: 'SET_STATUS', payload: { message: '示例文字已載入', type: 'good' }});
+  }, [state.direction, state.settings.autoConvert, doConvert, dispatch]);
 
   const clearAll = useCallback(() => {
     if (inputRef.current) inputRef.current.value = '';
     dispatch({ type: 'SET_LAST_RESULT', payload: { text: '', pureText: '', direction: state.direction } });
+    dispatch({ type: 'SET_STATUS', payload: { message: '已清空', type: 'good' }});
   }, [state.direction, dispatch]);
 
   const importMapping = useCallback(async (url: string) => {
@@ -111,7 +136,7 @@ export default function App() {
       const custom = getItem<Record<string, string>>(StorageKeys.CUSTOM_MAPPINGS, {});
       const merged = { ...custom, ...data };
       setItem(StorageKeys.CUSTOM_MAPPINGS, merged);
-      initMapping({ ...SealMapping, ...merged });
+      initMapping({ ...(await loadSealMapping()), ...merged });
 
       const newSize = getMappingSize();
       dispatch({ type: 'SET_MAPPING_SIZE', payload: newSize });
