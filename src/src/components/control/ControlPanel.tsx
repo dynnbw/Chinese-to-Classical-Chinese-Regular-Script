@@ -67,15 +67,15 @@ export default function ControlPanel({
       </Tooltip>
 
       <Tooltip text="查看當前所有映射關係">
-        <button className="vertical-btn" onClick={onOpenMapping} {...R(4)}>查看映射</button>
+        <button className="vertical-btn btn-light" onClick={onOpenMapping} {...R(4)}>查看映射</button>
       </Tooltip>
 
       <Tooltip text="導出當前映射表 JSON 數據">
-        <button className="vertical-btn" onClick={onExportMapping} {...R(1)}>導出數據</button>
+        <button className="vertical-btn btn-light" onClick={onExportMapping} {...R(1)}>導出數據</button>
       </Tooltip>
 
       <Tooltip text="導出當前轉換結果">
-        <button className="vertical-btn" onClick={onExportText} {...R(1)}>導出文字</button>
+        <button className="vertical-btn btn-light" onClick={onExportText} {...R(1)}>導出文字</button>
       </Tooltip>
 
       <Tooltip text="切換轉換方向 (繁體↔篆書)">
@@ -90,7 +90,7 @@ export default function ControlPanel({
       </Tooltip>
 
       <Tooltip text="清理字体和图片缓存">
-        <button className="vertical-btn" id="clearCacheBtn" onClick={onClearCache} {...R(3)}>
+        <button className="vertical-btn btn-light" id="clearCacheBtn" onClick={onClearCache} {...R(3)}>
           清理緩存
         </button>
       </Tooltip>

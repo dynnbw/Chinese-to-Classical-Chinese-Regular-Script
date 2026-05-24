@@ -27,7 +27,7 @@ export default function MappingViewer({ onClose }: Props) {
           {entries.map(([src, tgt]) => (
             <div className="mapping-item" key={src}>
               <span className="mapping-src">{src}</span>
-              <span className="mapping-arrow">→</span>
+              <span className="mapping-arrow">↓</span>
               <span className="mapping-tgt">{tgt}</span>
             </div>
           ))}

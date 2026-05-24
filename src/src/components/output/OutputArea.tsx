@@ -1,5 +1,6 @@
-import type { RefObject } from 'react';
+import { useState, useEffect, useMemo, type RefObject } from 'react';
 import type { CharDetail } from '../../types';
+import { convertText, getMappingSize } from '../../core/converter';
 import CompatibilityRenderer from '../compatibility/CompatibilityRenderer';
 
 interface Props {
@@ -14,6 +15,29 @@ interface Props {
   outputRef: RefObject<HTMLDivElement | null>;
 }
 
+const POEMS: { title: string; lines: string[] }[] = [
+  {
+    title: '靜夜思',
+    lines: ['牀前看月光', '疑是地上霜', '舉頭望山月', '低頭思故鄉'],
+  },
+  {
+    title: '登鸛雀樓',
+    lines: ['白日依山盡', '黃河入海流', '欲窮千里目', '更上一層樓'],
+  },
+  {
+    title: '春曉',
+    lines: ['春眠不覺曉', '處處聞啼鳥', '夜來風雨聲', '花落知多少'],
+  },
+  {
+    title: '江雪',
+    lines: ['千山鳥飛絕', '萬徑人蹤滅', '孤舟簑笠翁', '獨釣寒江雪'],
+  },
+  {
+    title: '憫農',
+    lines: ['鋤禾日當午', '汗滴禾下土', '誰知盤中餐', '粒粒皆辛苦'],
+  },
+];
+
 export default function OutputArea({
   result,
   pureText,
@@ -27,12 +51,49 @@ export default function OutputArea({
 }: Props) {
   const hasResult = result && pureText;
 
+  const samplePoem = useMemo(() =>
+    POEMS[Math.floor(Math.random() * POEMS.length)],
+    [],
+  );
+
+  const [poetryResults, setPoetryResults] = useState<{ line: string; converted: string }[]>([]);
+  useEffect(() => {
+    // 等待映射表初始化完成后再计算
+    const tryConvert = () => {
+      if (getMappingSize() > 0) {
+        setPoetryResults(samplePoem.lines.map(line => ({
+          line,
+          converted: convertText(line, 'toSeal').pureText,
+        })));
+      } else {
+        setTimeout(tryConvert, 100);
+      }
+    };
+    tryConvert();
+  }, [samplePoem]);
+
   return (
     <section className="section output-area">
       <h2>轉換結果</h2>
       <div className="vertical-textarea" ref={outputRef} style={{ resize: 'none' }}>
         {!hasResult ? (
-          <p>轉換結果將在此處以豎排古籍樣式呈現。</p>
+          <>
+            <p>轉換結果將在此處以豎排古籍樣式呈現。</p>
+            {poetryResults.length > 0 && (
+            <div className="poetry-sample">
+              {poetryResults.map((p, i) => (
+                <span key={i}>
+                  <span className="poetry-row">
+                    <span>{p.line}</span>
+                    <span className="poetry-arrow">↓</span>
+                    <span className="poetry-converted">{p.converted}</span>
+                  </span>
+                  {i < poetryResults.length - 1 && <><br /><br /></>}
+                </span>
+              ))}
+            </div>
+            )}
+          </>
         ) : isCompat ? (
           <CompatibilityRenderer
             charDetails={charDetails}
