@@ -200,7 +200,16 @@ h2, h3, h4 {
   padding: 0.8em;
   margin-block: 0.5em;
   background-color: #FCF9F0;
-  border: 1px solid var(--color-border-double);
+  border: 4px solid #e2dcc7;
+  box-shadow:
+    1px 0 0 0 rgba(210, 200, 175, 0.6),
+    -1px 0 0 0 rgba(210, 195, 170, 0.5),
+    0 1px 0 0 rgba(215, 205, 180, 0.5),
+    0 -1px 0 0 rgba(210, 200, 175, 0.6),
+    2px 1px 0 0 rgba(200, 190, 165, 0.3),
+    -2px -1px 0 0 rgba(200, 185, 160, 0.3),
+    inset 1px 1px 2px rgba(180, 165, 140, 0.08),
+    inset -1px -1px 2px rgba(255, 250, 240, 0.12);
   font-size: 1.35em;
   color: var(--color-ink-deep);
   letter-spacing: 0;
@@ -273,15 +282,29 @@ h2, h3, h4 {
 .vertical-btn[data-rough="2"]::before { filter: url(#rough-2); }
 .vertical-btn[data-rough="3"]::before { filter: url(#rough-3); }
 .vertical-btn[data-rough="4"]::before { filter: url(#rough-4); }
-/* 切换方向按钮特殊色 */
+/* 切换方向按钮特殊色 — 褪色印章红 */
 #toggleDirectionBtn::before {
-  background: var(--color-seal-aged);
-  box-shadow: 0 0 0 2px var(--color-xuan-paper), 0 0 0 4px var(--color-bronze-dark);
+  background: #B0603A;
+  box-shadow: 0 0 0 2px var(--color-xuan-paper), 0 0 0 4px #8A4530;
 }
 #toggleDirectionBtn:hover::before {
-  background: var(--color-seal-vermillion);
-  box-shadow: 0 0 0 2px var(--color-xuan-light), 0 0 0 4px var(--color-bronze);
+  background: #C8744C;
+  box-shadow: 0 0 0 2px var(--color-xuan-light), 0 0 0 4px #A05038;
 }
+/* 控制面板按钮 75% 不透明度 */
+.control-panel .vertical-btn { opacity: 0.75; }
+.control-panel .vertical-btn:hover { opacity: 1; }
+
+/* 褪色印章红 — 仅控制面板按钮，不同深浅 */
+.control-panel .vertical-btn[data-rough="1"]::before { filter: url(#rough-1); background: #C47450; box-shadow: 0 0 0 2px var(--color-xuan-paper), 0 0 0 4px #A55C3C; }
+.control-panel .vertical-btn[data-rough="2"]::before { filter: url(#rough-2); background: #B8653F; box-shadow: 0 0 0 2px var(--color-xuan-paper), 0 0 0 4px #944E30; }
+.control-panel .vertical-btn[data-rough="3"]::before { filter: url(#rough-3); background: #C97A4E; box-shadow: 0 0 0 2px var(--color-xuan-paper), 0 0 0 4px #A85E3A; }
+.control-panel .vertical-btn[data-rough="4"]::before { filter: url(#rough-4); background: #BF6845; box-shadow: 0 0 0 2px var(--color-xuan-paper), 0 0 0 4px #9C5233; }
+.control-panel .vertical-btn[data-rough="1"]:hover::before { background: #D4855C; }
+.control-panel .vertical-btn[data-rough="2"]:hover::before { background: #C8744C; }
+.control-panel .vertical-btn[data-rough="3"]:hover::before { background: #DA8C60; }
+.control-panel .vertical-btn[data-rough="4"]:hover::before { background: #D07850; }
+
 .vertical-btn:hover::before {
   background: var(--color-seal-vermillion);
   box-shadow:
@@ -297,6 +320,30 @@ h2, h3, h4 {
   color: var(--color-seal-vermillion);
   font-weight: 700;
   text-shadow: 0 0 1px rgba(194, 59, 34, 0.15);
+}
+
+/* ===== 诗词示例（空状态） ===== */
+.poetry-sample {
+  margin-block-start: 1.2em;
+}
+.poetry-row {
+  display: inline;
+  line-height: 1.36;
+}
+.poetry-row span { display: inline; }
+.poetry-arrow {
+  color: var(--color-bronze);
+  font-size: 0.75em;
+}
+.poetry-converted {
+  color: var(--color-seal-vermillion);
+  font-weight: 700;
+}
+.poetry-note {
+  display: block;
+  font-size: 0.65em;
+  color: var(--color-ink-faint);
+  margin-block-start: 0.6em;
 }
 
 /* ===== 对照显示 ===== */
@@ -552,6 +599,25 @@ h2, h3, h4 {
 .settings-list {
   inline-size: 100%;
 }
+/* 仿古 checkbox：○（未选）/ ◉（已选） */
+.setting-item input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  inline-size: 1.1em;
+  block-size: 1.1em;
+  border: 1px solid var(--color-ink-faint);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.setting-item input[type="checkbox"]:checked {
+  border-color: var(--color-seal-vermillion);
+  background: radial-gradient(circle, var(--color-seal-vermillion) 35%, transparent 36%);
+}
+
 .setting-item {
   display: block;
   font-size: 0.8em;
