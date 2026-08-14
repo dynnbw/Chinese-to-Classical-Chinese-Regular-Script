@@ -708,7 +708,7 @@ class SealCharacterTool:
             if self.fetch_event.is_set():
                 return {'error': '任务已取消'}
             
-            url = f"https://www.zdic.net/hans/{quote(char)}"
+            url = f"https://zdic.net/hans/{quote(char)}"
             headers = {
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 "Cache-Control": "max-age=300",  # 启用请求缓存，减少重复请求
@@ -721,48 +721,8 @@ class SealCharacterTool:
             response.encoding = "utf-8"
             soup = BeautifulSoup(response.text, "html.parser")
             
-            # 解析数据（简化逻辑，减少不必要的正则匹配）
-            result = {
-                'swjz_content': "未找到《说文解字》原文",
-                'swjz_note_content': "未找到《说文解字注》注释",
-                'kangxi_content': "未找到《康熙字典》原文",
-                'variants': [],
-                'swjz_svg_url': None,
-                'swjz_note_svg_urls': []
-            }
-            
-            swjz_section = soup.find("div", class_="swjz")
-            if swjz_section:
-                svg_img = swjz_section.find("img", {"data-original": RE_SVG_EXT})
-                if svg_img and "data-original" in svg_img.attrs:
-                    result['swjz_svg_url'] = self.fix_svg_url(svg_img["data-original"])
-                
-                swnr_blocks = swjz_section.find_all("div", class_="swnr")
-                if swnr_blocks:
-                    result['swjz_content'] = self.clean_text(swnr_blocks[0].get_text(separator='\n'))
-                    if len(swnr_blocks) > 1:
-                        result['swjz_note_content'] = self.clean_text(swnr_blocks[1].get_text(separator='\n'))
-            
-            # 简化康熙字典解析，减少CPU开销
-            result['kangxi_content'] = self._parse_kangxi_content_simple(soup, char)
-            result['swjz_note_svg_urls'] = self._parse_swjz_note_svgs_simple(soup)
-            
-            # 简化异体字解析，减少循环次数
-            ytz_section = soup.find("div", class_="ytz_b")
-            if ytz_section:
-                all_variants = []
-                seen_chars = set()
-                for link in ytz_section.find_all("a", href=RE_HANS_LINK, limit=50):  # 限制数量
-                    variant_char = link.text.strip()
-                    if len(variant_char) != 1 or variant_char in seen_chars:
-                        continue
-                    seen_chars.add(variant_char)
-                    svg_img = link.find("img", {"data-original": RE_SVG_EXT})
-                    svg_url = svg_img["data-original"] if svg_img else ""
-                    all_variants.append({"char": variant_char, "svg": svg_url})
-                result['variants'] = all_variants
-            
-            return result
+            # 解析数据（新版页面结构：section#swjz / section#kxzd / 字源字形-异体字）
+            return self._parse_zdic_html(soup, char)
             
         except Exception as e:
             return {
@@ -776,37 +736,111 @@ class SealCharacterTool:
             }
     
     # ========== 核心优化5：简化解析逻辑 ==========
+    def _parse_zdic_html(self, soup: BeautifulSoup, char: str) -> Dict:
+        """解析汉典新版页面（dict-section 结构）"""
+        result = {
+            'swjz_content': "未找到《说文解字》原文",
+            'swjz_note_content': "未找到《说文解字注》注释",
+            'kangxi_content': f"未找到「{char}」的《康熙字典》原文",
+            'variants': [],
+            'swjz_svg_url': None,
+            'swjz_note_svg_urls': []
+        }
+
+        # 说文解字板块：按小标题区分原文块与注块
+        swjz_section = soup.find("section", id="swjz")
+        if swjz_section:
+            swjz_main = None
+            swjz_note = None
+            for block in swjz_section.find_all("div", class_="dict-ancient"):
+                title_el = block.find("h3", class_="dict-sub-title")
+                title = title_el.get_text(strip=True) if title_el else ""
+                if title.startswith("说文解字注"):
+                    swjz_note = block
+                elif title.startswith("说文解字"):
+                    swjz_main = block
+
+            if swjz_main is not None:
+                svg_img = swjz_main.find("img", src=RE_SVG_EXT)
+                if svg_img and svg_img.get("src"):
+                    result['swjz_svg_url'] = self.fix_svg_url(svg_img["src"])
+                paras = swjz_main.find_all("p")
+                if paras:
+                    # 段落内用''拼接：生僻字以独立span呈现，用'\n'会拆散句子
+                    result['swjz_content'] = self.clean_text(
+                        "\n".join(p.get_text(separator='', strip=True) for p in paras))
+
+            if swjz_note is not None:
+                paras = swjz_note.find_all("p")
+                if paras:
+                    result['swjz_note_content'] = self.clean_text(
+                        "\n".join(p.get_text(separator='', strip=True) for p in paras))
+
+        # 康熙字典原文与说文解字注SVG
+        result['kangxi_content'] = self._parse_kangxi_content_simple(soup, char)
+        result['swjz_note_svg_urls'] = self._parse_swjz_note_svgs_simple(soup)
+
+        # 异体字（位于字源字形板块末尾）
+        ytz_heading = soup.find(
+            lambda tag: tag.name == "h3"
+            and "dict-sub-title" in (tag.get("class") or [])
+            and tag.get_text(strip=True) == "异体字"
+        )
+        if ytz_heading:
+            variant_box = ytz_heading.find_next_sibling("div", class_="glyph-evolution")
+            if variant_box:
+                all_variants = []
+                seen_chars = set()
+                for item in variant_box.find_all("div", class_="glyph-evolution__item", limit=50):
+                    label = item.find("span", class_="glyph-evolution__label")
+                    link = item.find("a", href=RE_HANS_LINK)
+                    variant_char = label.get_text(strip=True) if label else ((link.get("title") or "").strip() if link else "")
+                    if len(variant_char) != 1 or variant_char in seen_chars:
+                        continue
+                    seen_chars.add(variant_char)
+                    svg_img = item.find("img", src=RE_SVG_EXT)
+                    svg_url = svg_img["src"] if svg_img else ""
+                    all_variants.append({"char": variant_char, "svg": svg_url})
+                result['variants'] = all_variants
+
+        return result
+
     def _parse_kangxi_content_simple(self, soup: BeautifulSoup, char: str) -> str:
         """简化康熙字典解析，减少正则匹配和文本处理"""
         try:
-            kangxi_box = soup.find('div', class_='kxzd')
-            if not kangxi_box:
+            kangxi_section = soup.find('section', id='kxzd')
+            if not kangxi_section:
                 return f"未找到「{char}」的《康熙字典》原文"
-            
-            knr_content = kangxi_box.find('div', class_='knr')
-            if not knr_content:
+
+            ancient_box = kangxi_section.find('div', class_='dict-ancient')
+            if not ancient_box:
                 return f"未找到「{char}」的《康熙字典》原文"
-            
-            # 简化文本清理，减少循环和正则
-            raw_text = knr_content.get_text(separator='\n', strip=True)
+
+            # 简化文本清理，减少循环和正则（p标签内联生僻字图片自带隐藏文字，get_text可直接取到；
+            # 段落内用''拼接，避免生僻字span被拆成单独一行后被过滤）
+            paras = ancient_box.find_all('p')
+            raw_text = "\n".join(p.get_text(separator='', strip=True) for p in paras)
             # 仅过滤明显的广告/无关内容
             filter_lines = [line for line in raw_text.split('\n') if len(line) > 2 and not any(key in line for key in ['广告', '返回顶部', '汉典'])]
             return '\n'.join(filter_lines[:50])  # 限制显示行数，减少渲染
-            
+
         except Exception as e:
             return f"解析失败：{str(e)[:50]}"
-    
+
     def _parse_swjz_note_svgs_simple(self, soup: BeautifulSoup) -> List[str]:
         """简化SVG链接解析，减少遍历次数"""
         svg_urls = []
         try:
-            note_sections = soup.find_all("div", class_="swjz", limit=2)
+            swjz_section = soup.find("section", id="swjz")
+            if not swjz_section:
+                return []
             seen_urls = set()
-            for section in note_sections:
-                svg_imgs = section.find_all("img", {"data-original": RE_SVG_EXT}, limit=5)
+            for block in swjz_section.find_all("div", class_="dict-ancient"):
+                svg_imgs = block.find_all("img", src=RE_SVG_EXT, limit=5)
                 for img in svg_imgs:
-                    svg_url = self.fix_svg_url(img.get("data-original", ""))
-                    if svg_url and svg_url not in seen_urls:
+                    svg_url = self.fix_svg_url(img.get("src", ""))
+                    # 排除正文内联生僻字小图(song/cn)，只保留字形页SVG
+                    if svg_url and "/song/" not in svg_url and svg_url not in seen_urls:
                         seen_urls.add(svg_url)
                         svg_urls.append(svg_url)
             return svg_urls[:3]  # 限制数量，减少内存占用
